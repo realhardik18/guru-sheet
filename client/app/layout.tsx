@@ -25,7 +25,9 @@ export const metadata: Metadata = {
   description:
     "Turn a textbook chapter into a print-ready, difficulty-tiered worksheet.",
   icons: {
-    icon: "/logo.png",
+    icon: [{ url: "/guru-sheet-icon.png", type: "image/png" }],
+    shortcut: "/guru-sheet-icon.png",
+    apple: "/guru-sheet-icon.png",
   },
 };
 

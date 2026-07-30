@@ -2,8 +2,8 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Books, CaretLeft, CaretRight, Check, ClockCounterClockwise, FolderSimple, Gear, House, UserCircle, WarningCircle, X } from '@phosphor-icons/react';
+import { usePathname, useRouter } from 'next/navigation';
+import { Books, Check, ClockCounterClockwise, FolderSimple, Gear, House, List, PencilSimple, Trash, UserCircle, WarningCircle, X } from '@phosphor-icons/react';
 import { useState, type FormEvent } from 'react';
 import type { Chat } from '@/lib/types';
 
@@ -16,32 +16,34 @@ const navItems = [
 
 export function SidebarContent({ chats, teacherName, dataDir }: SidebarContentProps) {
   const [collapsed, setCollapsed] = useState(false);
+  const [hovering, setHovering] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const pathname = usePathname();
+  const compact = collapsed && !hovering;
 
   return (
-    <aside className={`no-print flex h-full shrink-0 flex-col border-r border-line bg-surface font-[family-name:var(--font-inter)] transition-[width] duration-200 ease-out ${collapsed ? 'w-[4.5rem]' : 'w-72'}`}>
-      <div className={`flex border-b border-line ${collapsed ? 'h-28 flex-col items-center justify-center gap-2 px-2' : 'h-[4.75rem] items-center justify-between px-4'}`}>
+    <aside onMouseEnter={() => setHovering(true)} onMouseLeave={() => setHovering(false)} className={`no-print flex h-full shrink-0 flex-col overflow-hidden border-r border-line bg-surface font-[family-name:var(--font-inter)] transition-[width] duration-200 ease-out ${compact ? 'w-16' : 'w-72'}`}>
+      <div className={`flex h-16 shrink-0 border-b border-line ${compact ? 'items-center justify-center px-2' : 'items-center justify-between px-4'}`}>
         <Link href="/" title="GuruSheet" className="flex min-w-0 items-center gap-2.5 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-accent">
-          <Image src="/logo.png" alt="" width={32} height={32} className="shrink-0 rounded-lg shadow-sm" priority />
-          {!collapsed && <span className="truncate text-[17px] font-semibold tracking-[-0.03em]">Guru<span className="text-accent">Sheet</span></span>}
+          <Image src="/guru-sheet-icon.png" alt="" width={compact ? 34 : 32} height={compact ? 34 : 32} className="shrink-0 rounded-lg shadow-sm" priority />
+          {!compact && <span className="truncate text-[17px] font-semibold tracking-[-0.03em]">Guru<span className="text-accent">Sheet</span></span>}
         </Link>
-        <CollapseButton collapsed={collapsed} onClick={() => setCollapsed((value) => !value)} iconOnly />
+        {!compact && <CollapseButton collapsed={collapsed} onClick={() => setCollapsed((value) => !value)} />}
       </div>
 
-      <nav className={`space-y-1 py-4 ${collapsed ? 'px-2' : 'px-3'}`} aria-label="Main navigation">
+      {!compact && <>
+      <nav className="space-y-1 px-3 py-4" aria-label="Main navigation">
         {navItems.map(({ href, label, Icon }) => {
           const active = href === '/' ? pathname === '/' : pathname.startsWith(href);
           return (
-          <Link key={href} href={href} title={label} aria-current={active ? 'page' : undefined} className={`flex h-10 items-center rounded-lg text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-accent ${collapsed ? 'justify-center' : 'gap-2.5 px-3'} ${active ? 'bg-accent-soft text-accent' : 'text-muted hover:bg-accent-soft hover:text-accent'}`}>
+          <Link key={href} href={href} title={label} aria-current={active ? 'page' : undefined} className={`flex h-10 items-center gap-2.5 rounded-lg px-3 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-accent ${active ? 'bg-accent-soft text-accent' : 'text-muted hover:bg-accent-soft hover:text-accent'}`}>
             <Icon size={19} weight={active ? 'fill' : 'regular'} aria-hidden="true" className="shrink-0" />
-            {!collapsed && <span>{label}</span>}
+            <span>{label}</span>
           </Link>
           );
         })}
       </nav>
 
-      {!collapsed ? (
         <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-4">
           <div className="mb-2 flex items-center gap-2 px-2 pt-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
             <ClockCounterClockwise size={16} weight="bold" aria-hidden="true" /> Recent
@@ -51,28 +53,61 @@ export function SidebarContent({ chats, teacherName, dataDir }: SidebarContentPr
           ) : (
             <ul className="space-y-1">
               {chats.slice(0, 15).map((chat) => (
-                <li key={chat.id}>
-                  <Link href={`/chat/${chat.id}`} title={chat.title} aria-current={pathname === `/chat/${chat.id}` ? 'page' : undefined} className={`block truncate rounded-lg px-2.5 py-2 text-[13px] transition-colors ${pathname === `/chat/${chat.id}` ? 'bg-accent-soft font-medium text-accent' : 'text-muted hover:bg-accent-soft hover:text-foreground'}`}>
+                <li key={chat.id} className={`group flex items-center rounded-lg pr-1 transition-colors ${pathname === `/chat/${chat.id}` ? 'bg-accent-soft' : 'hover:bg-accent-soft'}`}>
+                  <Link href={`/chat/${chat.id}`} title={chat.title} aria-current={pathname === `/chat/${chat.id}` ? 'page' : undefined} className={`min-w-0 flex-1 truncate px-2.5 py-2 text-[13px] transition-colors ${pathname === `/chat/${chat.id}` ? 'font-medium text-accent' : 'text-muted hover:text-foreground'}`}>
                     {chat.title}
                   </Link>
+                  <ChatActions chat={chat} active={pathname === `/chat/${chat.id}`} />
                 </li>
               ))}
             </ul>
           )}
         </div>
-      ) : <div className="flex-1" />}
-
       <ProfileSection
-        collapsed={collapsed}
+        collapsed={false}
         teacherName={teacherName}
         dataDir={dataDir}
         open={profileOpen}
         onOpen={() => setProfileOpen(true)}
         onClose={() => setProfileOpen(false)}
       />
+      </>}
+      {compact && <div className="flex-1" />}
 
     </aside>
   );
+}
+
+function ChatActions({ chat, active }: { chat: Chat; active: boolean }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+
+  async function rename() {
+    const title = window.prompt('Rename worksheet chat', chat.title)?.trim();
+    if (!title || title === chat.title) return;
+    setBusy(true);
+    try {
+      const response = await fetch(`/api/chats/${chat.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title }) });
+      if (!response.ok) throw new Error();
+      router.refresh();
+    } finally { setBusy(false); }
+  }
+
+  async function remove() {
+    if (!window.confirm(`Delete “${chat.title}”? This cannot be undone.`)) return;
+    setBusy(true);
+    try {
+      const response = await fetch(`/api/chats/${chat.id}`, { method: 'DELETE' });
+      if (!response.ok) throw new Error();
+      if (active) router.replace('/');
+      router.refresh();
+    } finally { setBusy(false); }
+  }
+
+  return <span className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+    <button type="button" onClick={() => void rename()} disabled={busy} title="Rename chat" aria-label={`Rename ${chat.title}`} className="rounded-md p-1 text-muted hover:bg-surface hover:text-accent disabled:opacity-40"><PencilSimple size={14} weight="bold" /></button>
+    <button type="button" onClick={() => void remove()} disabled={busy} title="Delete chat" aria-label={`Delete ${chat.title}`} className="rounded-md p-1 text-muted hover:bg-surface hover:text-[#a14f24] disabled:opacity-40"><Trash size={14} weight="bold" /></button>
+  </span>;
 }
 
 function ProfileSection({ collapsed, teacherName, dataDir, open, onOpen, onClose }: {
@@ -132,11 +167,10 @@ function ProfileDialog({ teacherName, dataDir, onClose }: { teacherName: string;
   );
 }
 
-function CollapseButton({ collapsed, onClick, iconOnly = false }: { collapsed: boolean; onClick: () => void; iconOnly?: boolean }) {
+function CollapseButton({ collapsed, onClick }: { collapsed: boolean; onClick: () => void }) {
   return (
-    <button type="button" onClick={onClick} aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} className={`flex h-9 items-center rounded-lg text-muted transition-colors hover:bg-accent-soft hover:text-accent focus-visible:ring-2 focus-visible:ring-accent ${iconOnly || collapsed ? 'w-9 justify-center' : 'w-full gap-2 px-2.5 text-xs font-medium'}`}>
-      {collapsed ? <CaretRight size={18} weight="bold" aria-hidden="true" /> : <CaretLeft size={18} weight="bold" aria-hidden="true" />}
-      {!iconOnly && !collapsed && <span>Collapse sidebar</span>}
+    <button type="button" onClick={onClick} aria-label={collapsed ? 'Keep sidebar open' : 'Collapse sidebar'} title={collapsed ? 'Keep sidebar open' : 'Collapse sidebar'} className="flex h-9 w-9 items-center justify-center rounded-lg text-muted transition-colors hover:bg-accent-soft hover:text-accent focus-visible:ring-2 focus-visible:ring-accent">
+      <List size={20} weight="bold" aria-hidden="true" />
     </button>
   );
 }

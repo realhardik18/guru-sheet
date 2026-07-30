@@ -6,6 +6,7 @@ import { FALLBACK_WORKSHEET } from '@/lib/ai/fallback';
 import { getBook, getChapterText } from '@/lib/store';
 import { LOW_TEXT_THRESHOLD } from '@/lib/types';
 import { getAppConfig } from '@/lib/config';
+import type { WorksheetVersionSettings } from '@/lib/types';
 
 export const maxDuration = 60;
 
@@ -18,11 +19,15 @@ export async function POST(req: Request) {
     chapterId,
     instruction,
     previous,
+    settings,
+    avoidQuestions,
   }: {
     bookId?: string;
     chapterId?: string;
     instruction: string;
     previous?: Worksheet;
+    settings?: WorksheetVersionSettings;
+    avoidQuestions?: string[];
   } = await req.json();
 
   const [book, chapterText] = await Promise.all([
@@ -53,7 +58,7 @@ export async function POST(req: Request) {
           chapterTitle: book?.chapters.find((c) => c.id === chapterId)?.title,
           chapterText,
         }),
-        prompt: worksheetUserPrompt({ instruction, previous }),
+        prompt: worksheetUserPrompt({ instruction, previous, settings, avoidQuestions }),
       });
 
       const parsed = WorksheetSchema.safeParse(output);

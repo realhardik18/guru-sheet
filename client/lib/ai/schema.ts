@@ -2,11 +2,14 @@ import { z } from 'zod';
 
 export const QuestionSchema = z.object({
   q: z.string().describe('The question text, as it appears on the page.'),
-  type: z.enum(['mcq', 'short', 'long']),
+  type: z.enum(['mcq', 'fill_blank', 'true_false', 'one_line', 'short_answer', 'match', 'define_list_state', 'short', 'long']),
   options: z
     .array(z.string())
+    .length(4)
     .optional()
-    .describe('Four options. Required for mcq, omitted otherwise.'),
+    .describe('Exactly four options for mcq, omitted otherwise.'),
+  matches: z.array(z.object({ left: z.string(), right: z.string() })).optional()
+    .describe('Pairs for a match-the-following question; omitted otherwise.'),
   answer: z.string(),
   tier: z
     .enum(['below', 'at', 'stretch'])
@@ -29,6 +32,18 @@ export const WorksheetSchema = z.object({
   classLevel: z.string(),
   totalMarks: z.number(),
   questions: z.array(QuestionSchema),
+}).superRefine((worksheet, ctx) => {
+  worksheet.questions.forEach((question, index) => {
+    if (question.type === 'mcq' && !question.options) {
+      ctx.addIssue({ code: 'custom', path: ['questions', index, 'options'], message: 'MCQs need four options.' });
+    }
+    if (question.type !== 'mcq' && question.options) {
+      ctx.addIssue({ code: 'custom', path: ['questions', index, 'options'], message: 'Only MCQs use options.' });
+    }
+    if (question.type === 'match' && (!question.matches || question.matches.length < 2)) {
+      ctx.addIssue({ code: 'custom', path: ['questions', index, 'matches'], message: 'Matching needs at least two pairs.' });
+    }
+  });
 });
 
 export type Question = z.infer<typeof QuestionSchema>;

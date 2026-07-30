@@ -1,9 +1,9 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, Sparkle, Warning } from '@phosphor-icons/react/dist/ssr';
+import { ArrowLeft, Warning } from '@phosphor-icons/react/dist/ssr';
 import { getBook, getCollection } from '@/lib/store';
 import { LOW_TEXT_THRESHOLD } from '@/lib/types';
-import { startChat } from '@/lib/actions';
+import { GenerateWorksheetButton } from '@/components/GenerateWorksheetButton';
 import { requireConfiguredPage } from '@/lib/setup';
 
 export const dynamic = 'force-dynamic';
@@ -48,14 +48,7 @@ export default async function CollectionPage({
                     </p>
                   )}
                 </div>
-                <form action={startChat}>
-                  <input type="hidden" name="bookId" value={book.id} />
-                  <input type="hidden" name="chapterId" value={chapter.id} />
-                  <button type="submit" disabled={scanned} className="inline-flex items-center gap-1.5 rounded-md bg-accent px-3 py-2 text-sm font-medium text-background disabled:cursor-not-allowed disabled:opacity-40">
-                    <Sparkle size={14} weight="bold" aria-hidden="true" />
-                    Generate
-                  </button>
-                </form>
+                <GenerateWorksheetButton bookId={book.id} chapterId={chapter.id} disabled={scanned} />
               </li>
             );
           })}

@@ -1,4 +1,5 @@
 import type { Question, Worksheet } from './schema';
+import type { WorksheetVersionSettings } from '@/lib/types';
 
 /**
  * Chapter text always goes in the SYSTEM prompt, never in a user message.
@@ -76,8 +77,14 @@ Rules:
 - Order questions easiest first, so a struggling child starts with a success.
 - "below" questions are short and concrete. "stretch" questions ask for
   reasoning, justification or application, not just more recall.
-- mcq questions must have exactly four plausible options; the wrong ones should
-  be mistakes a real child would make. Non-mcq questions must omit options.
+- Use these printable question types: mcq, fill_blank, true_false, one_line,
+  short_answer, match, define_list_state. mcq questions must have exactly four
+  plausible options; wrong choices must reflect common child misconceptions.
+  For true_false, require a correction when false. match questions need matches
+  with left/right pairs. Non-mcq questions must omit options.
+- short_answer questions are worth 2–3 marks and ask for 30–50 words. Put
+  concrete, reliable formats such as fill_blank and define_list_state mostly in
+  the below tier. Never use legacy short or long types in new worksheets.
 - Fill commonWrongAnswer wherever there is a predictable misconception. This is
   what lets her mark thirty scripts quickly.
 - totalMarks must equal the sum of the individual marks. Check this.
@@ -127,10 +134,21 @@ about the question exactly as it is.`;
 export function worksheetUserPrompt(opts: {
   instruction: string;
   previous?: Worksheet;
+  settings?: WorksheetVersionSettings;
+  avoidQuestions?: string[];
 }): string {
-  const { instruction, previous } = opts;
+  const { instruction, previous, settings, avoidQuestions } = opts;
 
-  if (!previous) return opts.instruction;
+  if (!previous) {
+    const format = settings?.format === 'more-mcqs' ? 'Use a noticeably MCQ-heavy mix, while retaining a few written checks.'
+      : settings?.format === 'more-written' ? 'Use a written-response-heavy mix, with few or no MCQs.'
+      : 'Use a balanced variety of the permitted question formats.';
+    const difficulty = settings?.difficulty === 'easier' ? 'Keep the overall language and thinking demand especially accessible.'
+      : settings?.difficulty === 'challenge' ? 'Increase reasoning and application while staying answerable from the chapter.'
+      : 'Use a normal grade-appropriate difficulty range.';
+    const distinct = avoidQuestions?.length ? `\nDo not repeat, reword closely, or assess the same fact as these questions from another version:\n${avoidQuestions.map((q) => `- ${q}`).join('\n')}` : '';
+    return `Create exactly ${settings?.questionCount ?? 10} questions. ${format} ${difficulty}\nTeacher request: ${instruction || 'Create a complete classroom worksheet.'}${distinct}`;
+  }
 
   // Revision turn — "make question 3 easier". Send the current sheet back so the
   // model edits it rather than starting over and losing everything she liked.

@@ -33,6 +33,22 @@ export type ChatMessage = {
   content: string;
 };
 
+export type WorksheetFormatTag = 'balanced' | 'more-mcqs' | 'more-written';
+export type WorksheetDifficultyTag = 'easier' | 'challenge';
+
+export type WorksheetVersionSettings = {
+  questionCount: number;
+  format: WorksheetFormatTag;
+  difficulty?: WorksheetDifficultyTag;
+};
+
+export type WorksheetVersion = {
+  id: string;
+  label: string;
+  settings: WorksheetVersionSettings;
+  worksheet?: Worksheet;
+};
+
 export type Chat = {
   id: string;
   title: string;
@@ -40,6 +56,8 @@ export type Chat = {
   chapterId?: string;
   createdAt: string;
   messages: ChatMessage[];
+  /** New chats retain independent printable versions; worksheet stays for old chats. */
+  worksheetVersions?: WorksheetVersion[];
   worksheet?: Worksheet;
 };
 

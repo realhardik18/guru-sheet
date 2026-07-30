@@ -204,3 +204,15 @@ export async function saveChat(chat: Chat): Promise<void> {
     JSON.stringify(chat, null, 2),
   );
 }
+
+export async function renameChat(chatId: string, title: string): Promise<boolean> {
+  const chat = await getChat(chatId);
+  if (!chat) return false;
+  await saveChat({ ...chat, title });
+  return true;
+}
+
+export async function deleteChat(chatId: string): Promise<void> {
+  const { chats } = await directories();
+  await fs.rm(path.join(chats, `${chatId}.json`), { force: true });
+}

@@ -3,8 +3,7 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { getBook, saveChat, getChat } from './store';
-import type { Chat } from './types';
-import type { Worksheet } from './ai/schema';
+import type { Chat, WorksheetVersion, WorksheetVersionSettings } from './types';
 import { requireConfiguredPage } from './setup';
 
 function newId() {
@@ -20,6 +19,25 @@ export async function startChat(formData: FormData) {
   const book = await getBook(bookId);
   const chapter = book?.chapters.find((c) => c.id === chapterId);
 
+  let settings: WorksheetVersionSettings[] = [{ questionCount: 10, format: 'balanced' }];
+  try {
+    const parsed = JSON.parse(String(formData.get('versionPlans') ?? '')) as unknown;
+    if (Array.isArray(parsed) && parsed.length >= 1 && parsed.length <= 3) {
+      const valid = parsed.every((item) => {
+        const plan = item as Partial<WorksheetVersionSettings>;
+        return Number.isInteger(plan.questionCount) && plan.questionCount! >= 5 && plan.questionCount! <= 25 &&
+          ['balanced', 'more-mcqs', 'more-written'].includes(String(plan.format)) &&
+          (plan.difficulty == null || ['easier', 'challenge'].includes(String(plan.difficulty)));
+      });
+      if (valid) settings = parsed as WorksheetVersionSettings[];
+    }
+  } catch { /* Use the sensible default when a stale form submits. */ }
+  const worksheetVersions: WorksheetVersion[] = settings.map((setting, index) => ({
+    id: `v${index + 1}`,
+    label: `Version ${index + 1}`,
+    settings: setting,
+  }));
+
   const chat: Chat = {
     id: newId(),
     title: chapter?.title ?? 'New worksheet',
@@ -27,6 +45,7 @@ export async function startChat(formData: FormData) {
     chapterId: chapterId || undefined,
     createdAt: new Date().toISOString(),
     messages: [],
+    worksheetVersions,
   };
 
   await saveChat(chat);
@@ -38,7 +57,7 @@ export async function startChat(formData: FormData) {
 export async function persistChat(
   chatId: string,
   messages: Chat['messages'],
-  worksheet?: Worksheet,
+  worksheetVersions?: WorksheetVersion[],
 ) {
   await requireConfiguredPage();
   const existing = await getChat(chatId);
@@ -46,7 +65,9 @@ export async function persistChat(
   await saveChat({
     ...existing,
     messages,
-    worksheet: worksheet ?? existing.worksheet,
+    worksheetVersions: worksheetVersions ?? existing.worksheetVersions,
+    // Keep legacy consumers and existing saved data interoperable.
+    worksheet: worksheetVersions?.find((version) => version.worksheet)?.worksheet ?? existing.worksheet,
   });
   revalidatePath('/');
 }

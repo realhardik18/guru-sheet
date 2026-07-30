@@ -1,14 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import {
   ArrowDown,
   ArrowUp,
+  ArrowsLeftRight,
   BookmarkSimple,
+  CheckSquare,
   CircleNotch,
+  ListBullets,
+  ListChecks,
   PencilSimple,
   RocketLaunch,
   Target,
+  TextAa,
+  TextT,
   X,
 } from '@phosphor-icons/react';
 import { TIERS, TIER_LABELS, type Question, type Worksheet } from '@/lib/ai/schema';
@@ -26,6 +32,20 @@ const EASIER_INSTRUCTION =
 const HARDER_INSTRUCTION =
   'Make this question harder — increase the difficulty within the same tier.';
 
+const QUESTION_TYPE_ACTIONS = [
+  { type: 'mcq', label: 'Multiple choice', Icon: ListBullets },
+  { type: 'fill_blank', label: 'Fill in the blank', Icon: TextT },
+  { type: 'true_false', label: 'True or false with correction', Icon: CheckSquare },
+  { type: 'one_line', label: 'One-word or one-line answer', Icon: TextAa },
+  { type: 'short_answer', label: 'Short answer', Icon: PencilSimple },
+  { type: 'match', label: 'Match the following', Icon: ArrowsLeftRight },
+  { type: 'define_list_state', label: 'Define, list, or state', Icon: ListChecks },
+] as const;
+
+function changeTypeInstruction(type: (typeof QUESTION_TYPE_ACTIONS)[number]['type']) {
+  return `Transform this into a ${type} question. Preserve the concept and tier. For mcq, provide exactly four plausible options with one correct answer; for match, provide at least two left/right pairs; for every other type omit options and matching pairs. For true_false, require a correction when the statement is false.`;
+}
+
 function RuledLines({ count }: { count: number }) {
   return (
     <div className="answer-lines mt-2 space-y-4" aria-hidden>
@@ -38,10 +58,12 @@ function RuledLines({ count }: { count: number }) {
 
 function QuestionEditor({
   busy,
+  questionType,
   onRevise,
   onClose,
 }: {
   busy: boolean;
+  questionType: Question['type'];
   onRevise: (instruction: string) => void;
   onClose: () => void;
 }) {
@@ -52,6 +74,22 @@ function QuestionEditor({
       className="no-print mt-2 flex flex-wrap items-center gap-2 rounded-md border border-accent/40 bg-accent-soft p-2.5"
       onClick={(e) => e.stopPropagation()}
     >
+      <div className="flex w-full flex-wrap items-center gap-1.5 border-b border-accent/20 pb-2">
+        <span className="mr-1 text-xs font-medium text-muted">Change type</span>
+        {QUESTION_TYPE_ACTIONS.map(({ type, label, Icon }) => (
+          <button
+            key={type}
+            type="button"
+            disabled={busy || questionType === type}
+            onClick={() => onRevise(changeTypeInstruction(type))}
+            aria-label={`Change to ${label}`}
+            title={`Change to ${label}`}
+            className={`flex h-7 w-7 items-center justify-center rounded-md border transition-colors disabled:cursor-default disabled:opacity-45 ${questionType === type ? 'border-accent bg-accent text-white' : 'border-line bg-surface text-muted hover:border-accent hover:text-accent'}`}
+          >
+            <Icon size={14} weight={questionType === type ? 'fill' : 'regular'} aria-hidden="true" />
+          </button>
+        ))}
+      </div>
       <button
         type="button"
         disabled={busy}
@@ -129,7 +167,8 @@ function QuestionBlock({
 }) {
   return (
     <li
-      className={`question rounded-md ${
+      aria-busy={busy || undefined}
+      className={`question relative rounded-md ${
         editable
           ? `cursor-pointer transition-colors ${
               selected ? 'bg-accent-soft ring-1 ring-inset ring-accent' : 'hover:bg-accent-soft/50'
@@ -159,8 +198,14 @@ function QuestionBlock({
             </ol>
           )}
 
-          {q.type === 'short' && <RuledLines count={2} />}
-          {q.type === 'long' && <RuledLines count={5} />}
+          {q.type === 'match' && q.matches && (
+            <div className="mt-2.5 grid grid-cols-2 overflow-hidden rounded-md border border-line text-sm">
+              <div className="border-r border-line bg-accent-soft px-2 py-1.5 font-medium">Column A</div><div className="bg-accent-soft px-2 py-1.5 font-medium">Column B</div>
+              {q.matches.map((pair, index) => <Fragment key={index}><div className="border-r border-t border-line px-2 py-1.5">{String.fromCharCode(65 + index)}. {pair.left}</div><div className="border-t border-line px-2 py-1.5">{index + 1}. {pair.right}</div></Fragment>)}
+            </div>
+          )}
+          {(['one_line', 'fill_blank', 'true_false', 'define_list_state', 'short'].includes(q.type)) && <RuledLines count={q.type === 'short' ? 2 : 1} />}
+          {(['short_answer', 'long'].includes(q.type)) && <RuledLines count={q.type === 'long' ? 5 : 3} />}
         </div>
         <div className="flex w-14 shrink-0 flex-col items-end gap-1 text-right">
           <span className="text-sm text-muted tabular-nums">[{q.marks}]</span>
@@ -175,7 +220,15 @@ function QuestionBlock({
           )}
         </div>
       </div>
-      {selected && <QuestionEditor busy={busy} onRevise={onRevise} onClose={onClose} />}
+      {selected && <QuestionEditor busy={busy} questionType={q.type} onRevise={onRevise} onClose={onClose} />}
+      {busy && (
+        <div className="no-print absolute inset-0 z-10 flex items-center justify-center rounded-md bg-surface/70 p-4 backdrop-blur-sm">
+          <div role="status" aria-live="polite" className="flex items-center gap-2 rounded-full border border-accent/20 bg-surface px-3.5 py-2 text-sm font-medium text-accent shadow-md">
+            <CircleNotch size={17} weight="bold" className="animate-spin" aria-hidden="true" />
+            Updating this question…
+          </div>
+        </div>
+      )}
     </li>
   );
 }
@@ -183,17 +236,19 @@ function QuestionBlock({
 export function WorksheetSheet({
   worksheet,
   editable = false,
-  selectedQuestion = null,
+  selectedQuestions = [],
   onSelectQuestion,
-  busyQuestion = null,
+  onCloseQuestion,
+  busyQuestions = [],
   onReviseQuestion,
 }: {
   worksheet: Worksheet;
   editable?: boolean;
-  selectedQuestion?: Question | null;
-  onSelectQuestion?: (question: Question | null) => void;
-  busyQuestion?: Question | null;
-  onReviseQuestion?: (question: Question, instruction: string) => void;
+  selectedQuestions?: Question[];
+  onSelectQuestion?: (question: Question) => void;
+  onCloseQuestion?: (question: Question) => void;
+  busyQuestions?: Question[];
+  onReviseQuestion?: (question: Question, questionIndex: number, instruction: string) => void;
 }) {
   // Preserve the model's ordering within a tier, but always print the tiers in
   // difficulty order so a struggling child starts on something they can do.
@@ -247,7 +302,7 @@ export function WorksheetSheet({
       {editable && (
         <p className="no-print mt-4 flex items-center gap-1.5 text-xs text-muted">
           <PencilSimple size={13} aria-hidden="true" />
-          Click a question to make it harder, easier, or apply your own change.
+          Click as many questions as you like to revise them in parallel.
         </p>
       )}
 
@@ -269,11 +324,11 @@ export function WorksheetSheet({
                   q={q}
                   number={number}
                   editable={editable}
-                  selected={selectedQuestion === q}
-                  busy={busyQuestion === q}
+                  selected={selectedQuestions.includes(q)}
+                  busy={busyQuestions.includes(q)}
                   onSelect={() => onSelectQuestion?.(q)}
-                  onClose={() => onSelectQuestion?.(null)}
-                  onRevise={(instruction) => onReviseQuestion?.(q, instruction)}
+                  onClose={() => onCloseQuestion?.(q)}
+                  onRevise={(instruction) => onReviseQuestion?.(q, worksheet.questions.indexOf(q), instruction)}
                 />
               ))}
             </ol>

@@ -1,18 +1,10 @@
 import Link from 'next/link';
-import { Books, Clock, FileDashed, FileText, Plus, Stack } from '@phosphor-icons/react/dist/ssr';
+import { Books, FileText, Plus, Stack } from '@phosphor-icons/react/dist/ssr';
 import { listBooks, listChats } from '@/lib/store';
 import { requireConfiguredPage } from '@/lib/setup';
+import { RecentWorksheets } from '@/components/RecentWorksheets';
 
 export const dynamic = 'force-dynamic';
-
-function timeAgo(iso: string) {
-  const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
-}
 
 function greeting() {
   const hour = new Date().getHours();
@@ -25,7 +17,10 @@ export default async function Dashboard() {
   const config = await requireConfiguredPage();
   const [books, chats] = await Promise.all([listBooks(), listChats()]);
   const chapterCount = books.reduce((n, b) => n + b.chapters.length, 0);
-  const worksheetCount = chats.filter((chat) => chat.worksheet).length;
+  const worksheetCount = chats.reduce(
+    (count, chat) => count + (chat.worksheetVersions?.filter((version) => version.worksheet).length ?? (chat.worksheet ? 1 : 0)),
+    0,
+  );
 
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 overflow-y-auto px-6 py-8 sm:px-10 sm:py-10">
@@ -77,42 +72,12 @@ export default async function Dashboard() {
         ))}
       </section>
 
-      <section className="mt-10 max-w-3xl">
+      <section className="mt-10">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold tracking-[-0.02em]">Recent worksheets</h2>
           {chats.length > 0 && <Link href="/library" className="text-sm font-medium text-accent hover:underline">View library</Link>}
         </div>
-        {chats.length === 0 ? (
-          <div className="mt-3 flex flex-col items-center gap-2 rounded-xl border border-dashed border-line bg-surface px-5 py-8 text-center">
-            <FileDashed size={28} className="text-muted" aria-hidden="true" />
-            <p className="text-sm text-muted">No worksheets yet.</p>
-          </div>
-        ) : (
-          <ul className="mt-3 divide-y divide-line overflow-hidden rounded-xl border border-line bg-surface shadow-sm">
-            {chats.slice(0, 6).map((chat) => (
-              <li key={chat.id}>
-                <Link
-                  href={`/chat/${chat.id}`}
-                  className="flex items-center gap-4 px-5 py-4 transition-colors hover:bg-accent-soft"
-                >
-                  <FileText size={18} className="shrink-0 text-muted" aria-hidden="true" />
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate font-medium">{chat.title}</div>
-                  </div>
-                  {chat.worksheet && (
-                    <span className="shrink-0 rounded bg-accent-soft px-2 py-0.5 text-xs text-accent">
-                      {chat.worksheet.totalMarks} marks
-                    </span>
-                  )}
-                  <span className="flex shrink-0 items-center gap-1 text-xs text-muted">
-                    <Clock size={12} aria-hidden="true" />
-                    {timeAgo(chat.createdAt)}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
+        <RecentWorksheets chats={chats} />
       </section>
     </main>
   );

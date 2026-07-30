@@ -50,7 +50,7 @@ Teacher
 - Produces short notes and compact, PDF-safe mind maps with short labels that do not overlap.
 - Supports per-question revisions, colour-coded quick tags, and local persistence for books, chats, and generated content.
 - Keeps the teacher workflow local-first: source books and saved work stay in a chosen local folder.
-- **Demo video:** [Watch on YouTube](https://youtu.be/UkbXO89M5ds)
+- **Demo video:** [Watch on YouTube](https://www.youtube.com/watch?v=TtCIw0jmSJY)
 
 ---
 
@@ -58,7 +58,7 @@ Teacher
 
 - **GitHub repo:** [github.com/realhardik18/guru-sheet](https://github.com/realhardik18/guru-sheet)
 - **Dataset(s) used:** Teacher-provided textbook PDFs and NCERT ZIP archives; users must ensure they have permission to use their source materials.
-- **Demo:** [Watch on YouTube](https://youtu.be/UkbXO89M5ds)
+- **Demo:** [Watch on YouTube](https://www.youtube.com/watch?v=TtCIw0jmSJY)
 - **License for this project:** [MIT](LICENSE)
 
 ---

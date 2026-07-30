@@ -75,9 +75,8 @@ export default async function Dashboard() {
       <section className="mt-10">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold tracking-[-0.02em]">Recent worksheets</h2>
-          {chats.length > 0 && <Link href="/library" className="text-sm font-medium text-accent hover:underline">View library</Link>}
         </div>
-        <RecentWorksheets chats={chats} />
+        <RecentWorksheets chats={chats} quickTags={config.quickTags ?? []} />
       </section>
     </main>
   );

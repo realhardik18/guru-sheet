@@ -17,7 +17,7 @@ import {
   TextT,
   X,
 } from '@phosphor-icons/react';
-import { TIERS, TIER_LABELS, type Question, type Worksheet } from '@/lib/ai/schema';
+import { DEFAULT_WORKSHEET_PREFERENCES, TIERS, TIER_LABELS, type Question, type Worksheet } from '@/lib/ai/schema';
 
 const OPTION_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
 
@@ -236,6 +236,8 @@ function QuestionBlock({
 
 export function WorksheetSheet({
   worksheet,
+  titleOverride,
+  preferencesOverride,
   editable = false,
   selectedQuestions = [],
   onSelectQuestion,
@@ -244,6 +246,8 @@ export function WorksheetSheet({
   onReviseQuestion,
 }: {
   worksheet: Worksheet;
+  titleOverride?: string;
+  preferencesOverride?: Partial<typeof DEFAULT_WORKSHEET_PREFERENCES>;
   editable?: boolean;
   selectedQuestions?: Question[];
   onSelectQuestion?: (question: Question) => void;
@@ -251,6 +255,7 @@ export function WorksheetSheet({
   busyQuestions?: Question[];
   onReviseQuestion?: (question: Question, questionIndex: number, instruction: string, targetType?: Question['type']) => void;
 }) {
+  const preferences = { ...DEFAULT_WORKSHEET_PREFERENCES, ...worksheet.preferences, ...preferencesOverride };
   // Preserve the model's ordering within a tier, but always print the tiers in
   // difficulty order so a struggling child starts on something they can do.
   const byTier = TIERS.map((tier) => ({
@@ -272,27 +277,18 @@ export function WorksheetSheet({
             <p className="worksheet-eyebrow text-xs font-semibold uppercase tracking-[0.2em] text-muted">
               Class Worksheet
             </p>
-            <h1 className="mt-1 text-2xl font-bold leading-tight">{worksheet.topic}</h1>
+            <h1 className="mt-1 text-2xl font-bold leading-tight">{titleOverride || worksheet.topic}</h1>
             <p className="mt-1 text-sm text-muted">{worksheet.classLevel}</p>
           </div>
           <div className="score-box shrink-0 rounded-md border border-foreground px-3.5 py-2 text-center">
             <div className="text-[10px] font-semibold uppercase tracking-wide text-muted">Score</div>
-            <div className="mt-0.5 font-mono text-sm">____ / {worksheet.totalMarks}</div>
+            <div className="mt-0.5 text-sm">____ / {worksheet.totalMarks}</div>
           </div>
         </div>
         <div className="mt-5 grid grid-cols-1 gap-x-8 gap-y-3 text-sm sm:grid-cols-3">
-          <div className="flex items-end gap-2">
-            <span className="text-muted">Name</span>
-            <span className="flex-1 border-b border-foreground" />
-          </div>
-          <div className="flex items-end gap-2">
-            <span className="text-muted">Class</span>
-            <span className="flex-1 border-b border-foreground" />
-          </div>
-          <div className="flex items-end gap-2">
-            <span className="text-muted">Date</span>
-            <span className="flex-1 border-b border-foreground" />
-          </div>
+          {preferences.showName && <div className="flex items-end gap-2"><span className="text-muted">Name</span><span className="flex-1 border-b border-foreground" /></div>}
+          {preferences.showClass && <div className="flex items-end gap-2"><span className="text-muted">Class</span><span className="flex-1 border-b border-foreground" /></div>}
+          {preferences.showDate && <div className="flex items-end gap-2"><span className="text-muted">Date</span>{preferences.dateValue ? <span className="flex-1 border-b border-foreground text-right">{new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(`${preferences.dateValue}T00:00:00`))}</span> : <span className="flex-1 border-b border-foreground" />}</div>}
         </div>
         <p className="worksheet-instructions mt-4 text-xs italic text-muted">
           Instructions: Answer all questions in the space provided. Read each question
@@ -317,6 +313,7 @@ export function WorksheetSheet({
             >
               <TierIcon size={14} weight="bold" aria-hidden="true" />
               {TIER_LABELS[tier]}
+              {preferences.showSectionMarks && <span className="ml-auto normal-case tracking-normal text-muted">{questions.reduce((sum, question) => sum + question.q.marks, 0)} marks</span>}
             </h2>
             <ol className="divide-y divide-line/60">
               {questions.map(({ q, number }) => (

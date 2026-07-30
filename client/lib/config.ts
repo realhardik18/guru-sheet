@@ -1,5 +1,7 @@
 import { constants, promises as fs } from 'fs';
 import path from 'path';
+import type { QuickTag } from './types';
+import { QUICK_TAG_COLORS } from './tags';
 
 const CONFIG_PATH = path.join(process.cwd(), 'guru-sheet.config.json');
 const DATA_FOLDER_NAME = 'Guru Sheet';
@@ -8,6 +10,7 @@ export type AppConfig = {
   version: 1;
   teacherName: string;
   dataDir: string;
+  quickTags?: QuickTag[];
 };
 
 export class SetupRequiredError extends Error {
@@ -95,4 +98,26 @@ export async function updateTeacherName(teacherNameInput: string): Promise<AppCo
   await fs.writeFile(temporaryPath, `${JSON.stringify(updated, null, 2)}\n`, 'utf-8');
   await fs.rename(temporaryPath, CONFIG_PATH);
   return updated;
+}
+
+export async function createQuickTag(input: { name: string; color: string }): Promise<QuickTag> {
+  const name = input.name.trim().replace(/\s+/g, ' ').slice(0, 32);
+  if (!name) throw new Error('Enter a tag name.');
+  if (!(QUICK_TAG_COLORS as readonly string[]).includes(input.color)) throw new Error('Choose a tag color.');
+  const config = await requireAppConfig();
+  if ((config.quickTags?.length ?? 0) >= 30) throw new Error('You can create up to 30 quick tags.');
+  const tag = { id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`, name, color: input.color };
+  await saveConfig({ ...config, quickTags: [...(config.quickTags ?? []), tag] });
+  return tag;
+}
+
+export async function deleteQuickTag(tagId: string): Promise<void> {
+  const config = await requireAppConfig();
+  await saveConfig({ ...config, quickTags: (config.quickTags ?? []).filter((tag) => tag.id !== tagId) });
+}
+
+async function saveConfig(config: AppConfig) {
+  const temporaryPath = `${CONFIG_PATH}.${process.pid}.tmp`;
+  await fs.writeFile(temporaryPath, `${JSON.stringify(config, null, 2)}\n`, 'utf-8');
+  await fs.rename(temporaryPath, CONFIG_PATH);
 }

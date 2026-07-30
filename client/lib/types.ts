@@ -56,9 +56,17 @@ export type Chat = {
   chapterId?: string;
   createdAt: string;
   messages: ChatMessage[];
+  /** Reusable organization labels, managed from the dashboard. */
+  tagIds?: string[];
   /** New chats retain independent printable versions; worksheet stays for old chats. */
   worksheetVersions?: WorksheetVersion[];
   worksheet?: Worksheet;
+};
+
+export type QuickTag = {
+  id: string;
+  name: string;
+  color: string;
 };
 
 /** Below this, a chapter is almost certainly a scanned image, not text. */

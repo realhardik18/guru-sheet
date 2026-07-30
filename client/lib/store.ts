@@ -2,6 +2,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import type { Book, Chat, LibraryCollection } from './types';
 import { requireAppConfig } from './config';
+import { normalizeImportedChapterTitle } from './indexer';
 
 /**
  * All managed-library writes live here. The NCERT importer is the only reader
@@ -203,6 +204,38 @@ export async function saveChat(chat: Chat): Promise<void> {
     path.join(chats, `${chat.id}.json`),
     JSON.stringify(chat, null, 2),
   );
+}
+
+/** Repairs extracted NCERT headings and the chats that inherited them in one pass. */
+export async function repairCollectionTitles(collectionId: string): Promise<number> {
+  const collection = await getCollection(collectionId);
+  if (!collection) return 0;
+  const books = (await Promise.all(collection.bookIds.map((id) => getBook(id)))).filter((book): book is Book => book !== null);
+  const byId = new Map(books.map((book) => [book.id, book]));
+  let changed = 0;
+  await Promise.all(books.map(async (book) => {
+    const chapters = book.chapters.map((chapter) => ({ ...chapter, title: normalizeImportedChapterTitle(chapter.title) }));
+    const title = normalizeImportedChapterTitle(book.title);
+    if (title !== book.title || chapters.some((chapter, index) => chapter.title !== book.chapters[index].title)) {
+      changed++;
+      await saveBook({ ...book, title, chapters });
+    }
+  }));
+  const chats = await listChats();
+  await Promise.all(chats.filter((chat) => chat.bookId && byId.has(chat.bookId)).map(async (chat) => {
+    const book = byId.get(chat.bookId!);
+    const chapterTitle = book?.chapters.find((chapter) => chapter.id === chat.chapterId)?.title;
+    const title = chapterTitle ? normalizeImportedChapterTitle(chapterTitle) : normalizeImportedChapterTitle(chat.title);
+    if (title !== chat.title) { changed++; await saveChat({ ...chat, title }); }
+  }));
+  return changed;
+}
+
+export async function updateChatTags(chatId: string, tagIds: string[]): Promise<boolean> {
+  const chat = await getChat(chatId);
+  if (!chat) return false;
+  await saveChat({ ...chat, tagIds });
+  return true;
 }
 
 export async function renameChat(chatId: string, title: string): Promise<boolean> {

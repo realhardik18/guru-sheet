@@ -4,6 +4,7 @@ import { ArrowLeft, Warning } from '@phosphor-icons/react/dist/ssr';
 import { getBook, getCollection } from '@/lib/store';
 import { LOW_TEXT_THRESHOLD } from '@/lib/types';
 import { GenerateWorksheetButton } from '@/components/GenerateWorksheetButton';
+import { RepairImportedTitlesButton } from '@/components/RepairImportedTitlesButton';
 import { requireConfiguredPage } from '@/lib/setup';
 
 export const dynamic = 'force-dynamic';
@@ -29,6 +30,7 @@ export default async function CollectionPage({
       <p className="mt-4 text-sm font-medium text-accent">Class {collection.classLevel} · {collection.subject}</p>
       <h1 className="mt-1 text-2xl font-bold tracking-tight">{collection.name}</h1>
       <p className="mt-1 text-muted">{books.length} NCERT chapter PDF{books.length === 1 ? '' : 's'} indexed from ZIP files.</p>
+      <div className="mt-4"><RepairImportedTitlesButton collectionId={collection.id} /></div>
       {books.length === 0 ? (
         <p className="mt-8 text-sm text-muted">No readable chapter PDFs were imported.</p>
       ) : (

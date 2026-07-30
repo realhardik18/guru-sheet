@@ -172,7 +172,7 @@ export async function indexChapterPdf(
 function titleFromFirstPage(firstPage: string, fallbackTitle: string): string {
   const lines = firstPage
     .split('\n')
-    .map((line) => line.replace(/\s+/g, ' ').trim())
+    .map((line) => cleanExtractedTitle(line, true))
     .filter((line) => line.length >= 3 && line.length <= 140);
   const headingIndex = lines.findIndex((line) => /^(chapter|unit|lesson)\s+[\divxlc]+\b/i.test(line));
   if (headingIndex >= 0) {
@@ -180,5 +180,25 @@ function titleFromFirstPage(firstPage: string, fallbackTitle: string): string {
     const next = lines[headingIndex + 1];
     return next && !/^(page|contents)\b/i.test(next) ? `${heading}: ${next}` : heading;
   }
-  return lines[0] ?? fallbackTitle;
+  return lines[0] ?? (cleanExtractedTitle(fallbackTitle, false) || 'Untitled chapter');
+}
+
+/** PDF text often appends a running page number to the chapter heading. */
+export function normalizeImportedChapterTitle(value: string): string {
+  return cleanExtractedTitle(value, true);
+}
+
+function cleanExtractedTitle(value: string, removeTrailingPageNumber: boolean): string {
+  let title = value
+    .normalize('NFKC')
+    .replace(/[\u0000-\u001F\u007F\u00AD\u200B-\u200D\uFEFF]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (removeTrailingPageNumber) title = title.replace(/\s+(?:page\s*)?\d{1,4}\s*$/i, '').trim();
+  // Text extraction commonly supplies chapter headings in all caps; make those
+  // readable without disturbing ordinary mixed-case names or abbreviations.
+  if (/[A-Z]/.test(title) && title === title.toUpperCase()) {
+    title = title.toLocaleLowerCase().replace(/\b[a-z]/g, (letter) => letter.toLocaleUpperCase());
+  }
+  return title;
 }

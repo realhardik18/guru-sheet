@@ -1,5 +1,23 @@
 import { z } from 'zod';
 
+export const WorksheetPreferencesSchema = z.object({
+  showName: z.boolean(),
+  showClass: z.boolean(),
+  showDate: z.boolean(),
+  dateValue: z.string(),
+  showSectionMarks: z.boolean(),
+});
+
+export type WorksheetPreferences = z.infer<typeof WorksheetPreferencesSchema>;
+
+export const DEFAULT_WORKSHEET_PREFERENCES: WorksheetPreferences = {
+  showName: true,
+  showClass: true,
+  showDate: true,
+  dateValue: '',
+  showSectionMarks: false,
+};
+
 export const QuestionSchema = z.object({
   q: z.string().describe('The question text, as it appears on the page.'),
   type: z.enum(['mcq', 'fill_blank', 'true_false', 'one_line', 'short_answer', 'match', 'define_list_state', 'short', 'long']),
@@ -32,6 +50,7 @@ export const WorksheetSchema = z.object({
   classLevel: z.string(),
   totalMarks: z.number(),
   questions: z.array(QuestionSchema),
+  preferences: WorksheetPreferencesSchema.optional(),
 }).superRefine((worksheet, ctx) => {
   worksheet.questions.forEach((question, index) => {
     if (question.type === 'mcq' && !question.options) {

@@ -1,5 +1,5 @@
 import { getAppConfig } from '@/lib/config';
-import { importNcertFolder } from '@/lib/ncert-importer';
+import { importNcertZip } from '@/lib/ncert-importer';
 import { findCollection } from '@/lib/store';
 
 export const maxDuration = 300;
@@ -15,13 +15,13 @@ export async function POST(req: Request) {
   } catch {
     return Response.json({ error: 'Invalid NCERT import request.' }, { status: 400 });
   }
-  const fields = ['sourceDirectory', 'name', 'classLevel', 'subject'] as const;
+  const fields = ['sourceZip', 'name', 'classLevel', 'subject'] as const;
   if (fields.some((field) => typeof body[field] !== 'string' || !body[field].trim())) {
-    return Response.json({ error: 'Choose a folder and complete every collection field.' }, { status: 400 });
+    return Response.json({ error: 'Choose a ZIP file and complete every collection field.' }, { status: 400 });
   }
 
   const input = {
-    sourceDirectory: body.sourceDirectory as string,
+    sourceZip: body.sourceZip as string,
     name: body.name as string,
     classLevel: body.classLevel as string,
     subject: body.subject as string,
@@ -34,10 +34,10 @@ export async function POST(req: Request) {
   }
 
   try {
-    return Response.json(await importNcertFolder(input));
+    return Response.json(await importNcertZip(input));
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : 'Could not import this NCERT folder.' },
+      { error: error instanceof Error ? error.message : 'Could not import this NCERT ZIP file.' },
       { status: 422 },
     );
   }

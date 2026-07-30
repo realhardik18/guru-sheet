@@ -46,20 +46,6 @@ function isSafePdfEntry(entryPath: string) {
   );
 }
 
-async function findZipFiles(directory: string): Promise<string[]> {
-  const found: string[] = [];
-  const entries = await fs.readdir(directory, { withFileTypes: true });
-  for (const entry of entries) {
-    const itemPath = path.join(directory, entry.name);
-    if (entry.isDirectory()) {
-      found.push(...(await findZipFiles(itemPath)));
-    } else if (entry.isFile() && path.extname(entry.name).toLowerCase() === '.zip') {
-      found.push(itemPath);
-    }
-  }
-  return found.sort();
-}
-
 async function streamToBuffer(stream: NodeJS.ReadableStream, maxBytes: number) {
   const chunks: Buffer[] = [];
   let size = 0;
@@ -72,21 +58,19 @@ async function streamToBuffer(stream: NodeJS.ReadableStream, maxBytes: number) {
   return Buffer.concat(chunks);
 }
 
-export async function importNcertFolder(input: {
-  sourceDirectory: string;
+export async function importNcertZip(input: {
+  sourceZip: string;
   name: string;
   classLevel: string;
   subject: string;
 }): Promise<NcertImportResult> {
-  const sourceDirectory = path.resolve(input.sourceDirectory.trim());
-  if (!path.isAbsolute(input.sourceDirectory.trim())) {
-    throw new Error('Choose an absolute NCERT source folder.');
+  const sourceZip = path.resolve(input.sourceZip.trim());
+  if (!path.isAbsolute(input.sourceZip.trim())) {
+    throw new Error('Choose an absolute NCERT ZIP file path.');
   }
-  const sourceStats = await fs.stat(sourceDirectory).catch(() => null);
-  if (!sourceStats?.isDirectory()) throw new Error('The selected NCERT folder is unavailable.');
-
-  const zipFiles = await findZipFiles(sourceDirectory);
-  if (zipFiles.length === 0) throw new Error('No ZIP files were found in that folder.');
+  if (path.extname(sourceZip).toLowerCase() !== '.zip') throw new Error('Choose a .zip file.');
+  const sourceStats = await fs.stat(sourceZip).catch(() => null);
+  if (!sourceStats?.isFile()) throw new Error('The selected NCERT ZIP file is unavailable.');
 
   const collection: LibraryCollection = {
     id: `ncert-${newId()}`,
@@ -99,8 +83,8 @@ export async function importNcertFolder(input: {
   await saveCollection(collection);
 
   const failures: NcertImportResult['failures'] = [];
-  for (const [archiveIndex, zipPath] of zipFiles.entries()) {
-    const archiveLabel = path.relative(sourceDirectory, zipPath);
+  for (const [archiveIndex, zipPath] of [sourceZip].entries()) {
+    const archiveLabel = path.basename(zipPath);
     try {
       await saveCollectionArchive(
         collection.id,
@@ -159,7 +143,7 @@ export async function importNcertFolder(input: {
   await saveCollection(collection);
   return {
     collection,
-    archiveCount: zipFiles.length,
+    archiveCount: 1,
     importedCount: collection.bookIds.length,
     failures,
   };

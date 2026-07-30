@@ -2,7 +2,7 @@
 
 import { useId, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { CheckCircle, CircleNotch, FolderOpen, UploadSimple, Warning, WarningCircle } from '@phosphor-icons/react';
+import { CheckCircle, CircleNotch, FileZip, UploadSimple, Warning, WarningCircle } from '@phosphor-icons/react';
 
 type ImportResult = {
   collection: { name: string; classLevel: string; subject: string };
@@ -12,7 +12,7 @@ type ImportResult = {
 };
 
 export function NcertImport({ subjectSuggestions }: { subjectSuggestions: string[] }) {
-  const [sourceDirectory, setSourceDirectory] = useState('');
+  const [sourceZip, setSourceZip] = useState('');
   const [name, setName] = useState('NCERT textbook');
   const [classLevel, setClassLevel] = useState('8');
   const [subject, setSubject] = useState('');
@@ -22,24 +22,24 @@ export function NcertImport({ subjectSuggestions }: { subjectSuggestions: string
   const [result, setResult] = useState<ImportResult | null>(null);
   const router = useRouter();
 
-  async function chooseFolder() {
+  async function chooseZip() {
     setPicking(true);
     setError(null);
     try {
       const response = await fetch('/api/setup/folder', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ purpose: 'ncert' }),
+        body: JSON.stringify({ purpose: 'ncert-zip' }),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? 'Could not open the folder chooser.');
+      if (!response.ok) throw new Error(data.error ?? 'Could not open the file chooser.');
       if (typeof data.path === 'string' && data.path) {
-        setSourceDirectory(data.path);
-        const finalPart = data.path.replace(/[\\/]$/, '').split(/[\\/]/).at(-1);
-        if (finalPart && name === 'NCERT textbook') setName(finalPart);
+        setSourceZip(data.path);
+        const finalPart = data.path.replace(/[\\/]$/, '').split(/[\\/]/).at(-1)?.replace(/\.zip$/i, '');
+        if (finalPart && name === 'NCERT textbook') setName(finalPart.replace(/[-_]+/g, ' '));
       }
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Could not open the folder chooser.');
+      setError(error instanceof Error ? error.message : 'Could not open the file chooser.');
     } finally {
       setPicking(false);
     }
@@ -54,14 +54,14 @@ export function NcertImport({ subjectSuggestions }: { subjectSuggestions: string
       const response = await fetch('/api/library/import-ncert', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sourceDirectory, name, classLevel, subject }),
+        body: JSON.stringify({ sourceZip, name, classLevel, subject }),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? 'Could not import the NCERT folder.');
+      if (!response.ok) throw new Error(data.error ?? 'Could not import the NCERT ZIP file.');
       setResult(data);
       router.refresh();
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Could not import the NCERT folder.');
+      setError(error instanceof Error ? error.message : 'Could not import the NCERT ZIP file.');
     } finally {
       setBusy(false);
     }
@@ -70,36 +70,36 @@ export function NcertImport({ subjectSuggestions }: { subjectSuggestions: string
   return (
     <section className="rounded-lg border border-line bg-surface p-5">
       <h2 className="flex items-center gap-2 font-semibold">
-        <FolderOpen size={18} className="text-accent" aria-hidden="true" />
-        Import NCERT ZIP folder
+        <FileZip size={18} className="text-accent" aria-hidden="true" />
+        Import NCERT ZIP file
       </h2>
       <p className="mt-1 text-sm text-muted">
-        GuruSheet finds every chapter PDF inside the ZIP files, names it from page one,
-        and stores the original archives in your local library.
+        Choose one NCERT ZIP file. GuruSheet finds its chapter PDFs, names them from page one,
+        and stores the original archive in your local library.
       </p>
       <form onSubmit={submit} className="mt-4 grid gap-3 sm:grid-cols-2">
         <label className="sm:col-span-2">
-          <span className="text-sm font-medium">NCERT source folder</span>
+          <span className="text-sm font-medium">NCERT ZIP file</span>
           <div className="mt-1 flex gap-2">
             <input
               required
-              value={sourceDirectory}
-              onChange={(event) => setSourceDirectory(event.target.value)}
-              placeholder="Choose the folder containing ZIP files"
-              className="min-w-0 flex-1 rounded-md border border-line bg-background px-3 py-2 font-mono text-sm outline-none focus:border-accent"
+              value={sourceZip}
+              onChange={(event) => setSourceZip(event.target.value)}
+              placeholder="Choose an NCERT ZIP file"
+              className="min-w-0 flex-1 rounded-md border border-line bg-background px-3 py-2 text-sm outline-none focus:border-accent"
             />
             <button
               type="button"
-              onClick={() => void chooseFolder()}
+              onClick={() => void chooseZip()}
               disabled={busy || picking}
               className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-line px-3 py-2 text-sm hover:border-accent disabled:opacity-50"
             >
               {picking ? (
                 <CircleNotch size={15} className="animate-spin" aria-hidden="true" />
               ) : (
-                <FolderOpen size={15} aria-hidden="true" />
+                <FileZip size={15} aria-hidden="true" />
               )}
-              {picking ? 'Opening…' : 'Choose folder'}
+              {picking ? 'Opening…' : 'Choose ZIP'}
             </button>
           </div>
         </label>
@@ -124,7 +124,7 @@ export function NcertImport({ subjectSuggestions }: { subjectSuggestions: string
             ) : (
               <UploadSimple size={15} weight="bold" aria-hidden="true" />
             )}
-            {busy ? 'Importing ZIPs…' : 'Import NCERT collection'}
+            {busy ? 'Importing ZIP…' : 'Import NCERT collection'}
           </button>
         </div>
       </form>

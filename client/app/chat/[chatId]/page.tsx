@@ -12,7 +12,7 @@ export default async function ChatPage({
   params: Promise<{ chatId: string }>;
   searchParams: Promise<{ version?: string }>;
 }) {
-  await requireConfiguredPage();
+  const config = await requireConfiguredPage();
   const { chatId } = await params;
   const { version } = await searchParams;
   const chat = await getChat(chatId);
@@ -25,5 +25,5 @@ export default async function ChatPage({
     ? `${book?.title} · ${chapter.title} (pp. ${chapter.startPage}–${chapter.endPage})`
     : 'No chapter selected';
 
-  return <ChatWorkspace chat={chat} chapterLabel={chapterLabel} initialVersionId={version} />;
+  return <ChatWorkspace chat={chat} chapterLabel={chapterLabel} initialVersionId={version} quickTags={config.quickTags ?? []} />;
 }

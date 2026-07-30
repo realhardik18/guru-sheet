@@ -11,7 +11,12 @@ function newId() {
 }
 
 function defaultChatTitle(chapterTitle?: string) {
-  return (chapterTitle ?? 'New worksheet').replace(/\s+/g, ' ').trim().toLowerCase();
+  const title = (chapterTitle ?? 'New worksheet')
+    .normalize('NFKC')
+    .replace(/[\u0000-\u001F\u007F]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return title || 'New worksheet';
 }
 
 /** Creates a chat pinned to a chapter, then opens it. */

@@ -12,11 +12,13 @@ import {
   PaperPlaneRight,
   Printer,
   PencilSimple,
+  SlidersHorizontal,
+  Tag,
   WarningCircle,
 } from '@phosphor-icons/react';
 import { WorksheetSheet } from './Worksheet';
-import type { Question, Worksheet } from '@/lib/ai/schema';
-import type { Chat, WorksheetVersion } from '@/lib/types';
+import { DEFAULT_WORKSHEET_PREFERENCES, type Question, type Worksheet, type WorksheetPreferences } from '@/lib/ai/schema';
+import type { Chat, QuickTag, WorksheetVersion } from '@/lib/types';
 import { persistChat } from '@/lib/actions';
 
 function toUIMessages(messages: Chat['messages']): UIMessage[] {
@@ -44,16 +46,21 @@ export function ChatWorkspace({
   chat,
   chapterLabel,
   initialVersionId,
+  quickTags,
 }: {
   chat: Chat;
   chapterLabel: string;
   initialVersionId?: string;
+  quickTags: QuickTag[];
 }) {
   const [input, setInput] = useState('');
   const [chatTitle, setChatTitle] = useState(chat.title);
   const [titleDraft, setTitleDraft] = useState(chat.title);
   const [editingTitle, setEditingTitle] = useState(false);
   const [savingTitle, setSavingTitle] = useState(false);
+  const [tagIds, setTagIds] = useState(chat.tagIds ?? []);
+  const [tagPickerOpen, setTagPickerOpen] = useState(false);
+  const [savingTags, setSavingTags] = useState(false);
   const initialVersions: WorksheetVersion[] = chat.worksheetVersions?.length
     ? chat.worksheetVersions
     : chat.worksheet
@@ -65,6 +72,9 @@ export function ChatWorkspace({
   );
   const [generatingVersionId, setGeneratingVersionId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [preferencesOpen, setPreferencesOpen] = useState(false);
+  const [preferencesDraft, setPreferencesDraft] = useState<WorksheetPreferences>(DEFAULT_WORKSHEET_PREFERENCES);
+  const [worksheetTitleDraft, setWorksheetTitleDraft] = useState('');
   const [selectedQuestions, setSelectedQuestions] = useState<Question[]>([]);
   const [busyQuestions, setBusyQuestions] = useState<Question[]>([]);
   const [toast, setToast] = useState<string | null>(null);
@@ -91,6 +101,17 @@ export function ChatWorkspace({
 
   function showToast(message: string) {
     setToast(message);
+  }
+
+  async function toggleTag(tagId: string) {
+    const next = tagIds.includes(tagId) ? tagIds.filter((id) => id !== tagId) : [...tagIds, tagId];
+    setTagIds(next); setSavingTags(true);
+    try {
+      const response = await fetch(`/api/chats/${chat.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tagIds: next }) });
+      if (!response.ok) throw new Error();
+    } catch {
+      setTagIds(tagIds); setNotice('Could not update tags.');
+    } finally { setSavingTags(false); }
   }
 
   useEffect(() => {
@@ -226,6 +247,28 @@ export function ChatWorkspace({
     submit(input);
   }
 
+  function openPreferences() {
+    if (!worksheet) return;
+    setWorksheetTitleDraft(worksheet.topic);
+    setPreferencesDraft({ ...DEFAULT_WORKSHEET_PREFERENCES, ...worksheet.preferences });
+    setPreferencesOpen(true);
+  }
+
+  function savePreferences(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const topic = worksheetTitleDraft.trim();
+    if (!topic || !activeVersion) return;
+    setVersions((current) => current.map((version) => version.id === activeVersion.id && version.worksheet
+      ? { ...version, worksheet: { ...version.worksheet, topic, preferences: preferencesDraft } }
+      : version));
+    setPreferencesOpen(false);
+    showToast('Worksheet preferences saved.');
+  }
+
+  function useToday() {
+    setPreferencesDraft((current) => ({ ...current, dateValue: new Intl.DateTimeFormat('en-CA').format(new Date()) }));
+  }
+
   async function saveTitle(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const title = titleDraft.trim();
@@ -256,8 +299,8 @@ export function ChatWorkspace({
         </div>
       )}
       {/* ---------------- Chat ---------------- */}
-      <section className="no-print flex min-h-0 w-full flex-col border-line lg:w-[560px] lg:shrink-0 lg:border-r">
-        <header className="border-b border-line px-5 py-3">
+      <section className="no-print flex min-h-0 w-full flex-col border-line font-sans lg:w-[560px] lg:shrink-0 lg:border-r">
+        <header className="flex items-start border-b border-line px-5 py-3">
           <div className="min-w-0 flex-1">
             {editingTitle ? (
               <form onSubmit={saveTitle} className="flex items-center gap-1">
@@ -283,6 +326,11 @@ export function ChatWorkspace({
               </div>
             )}
             <p className="mt-0.5 text-xs text-muted">Created {createdOn}</p>
+            {tagIds.length > 0 && <div className="mt-2 flex flex-wrap gap-1">{quickTags.filter((tag) => tagIds.includes(tag.id)).map((tag) => <span key={tag.id} className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium" style={{ backgroundColor: `${tag.color}18`, color: tag.color }}><i className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: tag.color }} />{tag.name}</span>)}</div>}
+          </div>
+          <div className="relative ml-2 shrink-0">
+            <button type="button" disabled={quickTags.length === 0 || savingTags} onClick={() => setTagPickerOpen((open) => !open)} title={quickTags.length ? 'Manage tags' : 'Create quick tags on the dashboard'} aria-label="Manage worksheet tags" className="rounded-lg p-2 text-muted transition-colors hover:bg-accent-soft hover:text-accent disabled:opacity-40"><Tag size={18} weight="bold" /></button>
+            {tagPickerOpen && <div className="absolute right-0 top-10 z-20 w-52 rounded-xl border border-line bg-surface p-2 shadow-lg"><p className="px-2 py-1 text-xs font-medium text-muted">Quick tags</p>{quickTags.map((tag) => <button key={tag.id} type="button" onClick={() => void toggleTag(tag.id)} className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm hover:bg-accent-soft"><i className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: tag.color }} /><span className="min-w-0 flex-1 truncate">{tag.name}</span><span className={`h-4 w-4 rounded border ${tagIds.includes(tag.id) ? 'border-accent bg-accent' : 'border-line'}`} aria-hidden="true" /></button>)}</div>}
           </div>
         </header>
 
@@ -368,6 +416,10 @@ export function ChatWorkspace({
                 <ListChecks size={15} aria-hidden="true" />
                 {worksheet.questions.length} questions · {worksheet.totalMarks} marks
               </span>
+              <button onClick={openPreferences} className="inline-flex items-center gap-1.5 rounded-md border border-line bg-surface px-3 py-1.5 text-sm transition-colors hover:border-accent">
+                <SlidersHorizontal size={15} aria-hidden="true" />
+                Preferences
+              </button>
               <button
                 onClick={printWorksheet}
                 className="ml-auto inline-flex items-center gap-1.5 rounded-md border border-line bg-surface px-3 py-1.5 text-sm transition-colors hover:border-accent"
@@ -376,6 +428,13 @@ export function ChatWorkspace({
                 Print
               </button>
             </div>
+            {preferencesOpen && <form onSubmit={savePreferences} className="no-print mx-auto mb-3 max-w-[210mm] rounded-xl border border-line bg-surface p-4 shadow-sm">
+              <div><h2 className="text-sm font-semibold">Worksheet preferences</h2><p className="mt-0.5 text-xs text-muted">Changes appear in the preview immediately and apply to {activeVersion?.label ?? 'this worksheet'} when saved.</p></div>
+              <label className="mt-4 block text-sm font-medium">Worksheet title<input required maxLength={160} value={worksheetTitleDraft} onChange={(event) => setWorksheetTitleDraft(event.target.value)} className="mt-1.5 block w-full rounded-md border border-line bg-background px-3 py-2 text-sm outline-none focus:border-accent" /></label>
+              <div className="mt-4 grid gap-2 sm:grid-cols-3"><PreferenceToggle checked={preferencesDraft.showName} onChange={(showName) => setPreferencesDraft((current) => ({ ...current, showName }))} label="Show Name field" /><PreferenceToggle checked={preferencesDraft.showClass} onChange={(showClass) => setPreferencesDraft((current) => ({ ...current, showClass }))} label="Show Class field" /><PreferenceToggle checked={preferencesDraft.showSectionMarks} onChange={(showSectionMarks) => setPreferencesDraft((current) => ({ ...current, showSectionMarks }))} label="Show section marks" /></div>
+              <div className="mt-4 rounded-lg border border-line bg-background p-3"><PreferenceToggle checked={preferencesDraft.showDate} onChange={(showDate) => setPreferencesDraft((current) => ({ ...current, showDate }))} label="Show Date field" />{preferencesDraft.showDate && <div className="mt-3 flex flex-wrap gap-2"><label className="min-w-[11rem] flex-1 text-sm font-medium">Date to prefill<input type="date" value={preferencesDraft.dateValue} onChange={(event) => setPreferencesDraft((current) => ({ ...current, dateValue: event.target.value }))} className="mt-1 block w-full rounded-md border border-line bg-surface px-3 py-2 text-sm outline-none focus:border-accent" /></label><button type="button" onClick={useToday} className="mt-6 h-9 rounded-md border border-line bg-surface px-3 text-sm font-medium text-accent hover:border-accent">Use today</button></div>}</div>
+              <div className="mt-4 flex justify-end gap-2"><button type="button" onClick={() => setPreferencesOpen(false)} className="rounded-md px-3 py-2 text-sm font-medium text-muted hover:bg-accent-soft">Cancel</button><button type="submit" className="rounded-md bg-accent px-3 py-2 text-sm font-semibold text-white hover:bg-[#124637]">Save preferences</button></div>
+            </form>}
             <div className="relative">
               {generatingVersionId === activeVersion?.id && (
                 <div className="no-print absolute inset-0 z-10 flex items-start justify-center rounded-lg bg-surface/70 pt-16 backdrop-blur-[1px]">
@@ -387,6 +446,8 @@ export function ChatWorkspace({
               )}
               <WorksheetSheet
                 worksheet={worksheet}
+                titleOverride={preferencesOpen ? worksheetTitleDraft : undefined}
+                preferencesOverride={preferencesOpen ? preferencesDraft : undefined}
                 editable={generatingVersionId !== activeVersion?.id}
                 selectedQuestions={selectedQuestions}
                 onSelectQuestion={(question) => setSelectedQuestions((current) => current.includes(question) ? current : [...current, question])}
@@ -417,6 +478,10 @@ export function ChatWorkspace({
       </section>
     </div>
   );
+}
+
+function PreferenceToggle({ checked, onChange, label }: { checked: boolean; onChange: (value: boolean) => void; label: string }) {
+  return <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-line bg-background px-3 py-2 text-sm"><input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} className="accent-[var(--accent)]" />{label}</label>;
 }
 
 function Dots() {

@@ -97,7 +97,7 @@ export function ChatWorkspace({
   }).format(new Date(chat.createdAt));
   const router = useRouter();
 
-  const { messages, sendMessage, status } = useChat({
+  const { messages, sendMessage, setMessages, status } = useChat({
     messages: toUIMessages(chat.messages),
     transport: new DefaultChatTransport({
       api: '/api/chat',
@@ -110,6 +110,14 @@ export function ChatWorkspace({
 
   function showToast(message: string) {
     setToast(message);
+  }
+
+  function announceGenerationComplete(label: string) {
+    setMessages((current) => [...current, {
+      id: `generation-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      role: 'assistant',
+      parts: [{ type: 'text', text: `Generation completed — your ${label} is ready.` }],
+    }]);
   }
 
   async function toggleTag(tagId: string) {
@@ -145,6 +153,7 @@ export function ChatWorkspace({
       const res = await fetch('/api/artifact', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bookId: chat.bookId, chapterId: chat.chapterId, type: artifactType, style: chat.notesStyle, instruction, previous: artifactType === 'notes' ? notes : mindMap }) });
       const data = await res.json(); if (!res.ok) { setNotice(data.error ?? 'Could not generate this artifact.'); return; }
       if (artifactType === 'notes') setNotes(data.artifact); else setMindMap(data.artifact);
+      announceGenerationComplete(artifactType === 'notes' ? 'short notes' : 'mind map');
       if (instruction) showToast('Artifact updated.');
     } catch { setNotice('Could not reach the model.'); } finally { setGeneratingVersionId(null); }
   }
@@ -174,6 +183,7 @@ export function ChatWorkspace({
       }
       setVersions((current) => current.map((item) => item.id === versionId ? { ...item, worksheet: data.worksheet } : item));
       setSelectedQuestions([]);
+      announceGenerationComplete(`${version.label.toLowerCase()} worksheet`);
       if (instruction.trim()) showToast(`${version.label} updated.`);
       if (data.fallback) {
         setNotice(`Model unavailable — ${version.label} is showing a saved worksheet.`);

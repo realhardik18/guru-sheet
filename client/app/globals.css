@@ -41,6 +41,34 @@ body {
   font-family: var(--font-poppins), sans-serif;
 }
 
+.math-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.08em;
+  white-space: nowrap;
+}
+
+.math-frac {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  min-width: 1em;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.math-frac > span:first-child {
+  border-bottom: 1px solid currentColor;
+  padding: 0 0.12em 0.04em;
+  line-height: 1;
+}
+
+.math-frac > span:last-child {
+  padding: 0.04em 0.12em 0;
+  line-height: 1;
+}
+
 .mindmap-branch {
   position: relative;
 }

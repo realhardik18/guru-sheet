@@ -1,6 +1,6 @@
 # GuruSheet
 
-**Track:** Education  
+**Track:** Intelligence with Purpose  
 **Team:** GuruSheet
 
 ---
@@ -50,9 +50,7 @@ Teacher
 - Produces short notes and compact, PDF-safe mind maps with short labels that do not overlap.
 - Supports per-question revisions, colour-coded quick tags, and local persistence for books, chats, and generated content.
 - Keeps the teacher workflow local-first: source books and saved work stay in a chosen local folder.
-- **Demo video:** To be added
-- **Live demo:** To be added
-- **Screenshots:** Add project screenshots here.
+- **Demo video:** [Watch on YouTube](https://youtu.be/UkbXO89M5ds)
 
 ---
 
@@ -60,8 +58,8 @@ Teacher
 
 - **GitHub repo:** [github.com/realhardik18/guru-sheet](https://github.com/realhardik18/guru-sheet)
 - **Dataset(s) used:** Teacher-provided textbook PDFs and NCERT ZIP archives; users must ensure they have permission to use their source materials.
-- **Demo:** To be added
-- **License for this project:** Not yet specified
+- **Demo:** [Watch on YouTube](https://youtu.be/UkbXO89M5ds)
+- **License for this project:** [MIT](LICENSE)
 
 ---
 

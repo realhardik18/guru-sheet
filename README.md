@@ -21,6 +21,28 @@ GuruSheet is an offline-first teacher workspace that turns textbook PDFs and NCE
 
 ---
 
+## Run Locally
+
+You need Node.js 18.18+ and one model provider: OpenRouter, a Gemini-compatible endpoint, or local Ollama.
+
+```bash
+git clone https://github.com/realhardik18/guru-sheet.git
+cd guru-sheet/client
+npm install
+cp .env.example .env.local
+```
+
+Edit `.env.local` to select a provider and add its API key. For fully local inference, set `AI_PROVIDER=ollama` and run an Ollama-compatible model on your machine.
+
+```bash
+npm run smoke  # checks the configured model and structured output
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000), then complete the one-time setup to choose where GuruSheet should store books and generated content.
+
+---
+
 ## How Gemma Is Used
 
 - **Model variant:** Gemma 4 26B A4B Instruct (`google/gemma-4-26b-a4b-it`)

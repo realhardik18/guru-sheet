@@ -56,6 +56,16 @@ export async function getBook(bookId: string): Promise<Book | null> {
   return readJson<Book>(path.join(books, bookId, 'meta.json'));
 }
 
+export async function getBookPdf(bookId: string): Promise<Buffer | null> {
+  const { books } = await directories();
+  if (!(await getBook(bookId))) return null;
+  try {
+    return await fs.readFile(path.join(books, bookId, 'original.pdf'));
+  } catch {
+    return null;
+  }
+}
+
 export async function saveBook(book: Book): Promise<void> {
   const { books } = await directories();
   const dir = path.join(books, book.id);

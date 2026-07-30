@@ -21,7 +21,8 @@ export async function POST(req: Request) {
     bookId,
     chapterId,
     artifactType,
-  }: { messages: UIMessage[]; bookId?: string; chapterId?: string; artifactType?: 'worksheet' | 'notes' | 'mindmap' } =
+    notesStyle,
+  }: { messages: UIMessage[]; bookId?: string; chapterId?: string; artifactType?: 'worksheet' | 'notes' | 'mindmap'; notesStyle?: 'study-sheet' | 'bullet-summary' | 'exam-revision' | 'formula-sheet' } =
     await req.json();
 
   const [book, chapterText] = await Promise.all([
@@ -36,6 +37,7 @@ export async function POST(req: Request) {
       chapterTitle: book?.chapters.find((c) => c.id === chapterId)?.title,
       chapterText,
       artifactType,
+      notesStyle,
     }),
     messages: await convertToModelMessages(messages),
   });

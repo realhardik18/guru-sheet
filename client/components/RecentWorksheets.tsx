@@ -35,6 +35,7 @@ export function RecentContent({ chats, quickTags }: { chats: Chat[]; quickTags: 
   const [query, setQuery] = useState('');
   const [type, setType] = useState<ArtifactType | 'all'>('all');
   const [page, setPage] = useState(1);
+  const [tagAssignments, setTagAssignments] = useState<Record<string, string[]>>({});
   const content = contentFrom(chats);
   const presentTypes = [...new Set(content.map((item) => item.type))].sort((a, b) => ARTIFACT_LABELS[a].localeCompare(ARTIFACT_LABELS[b]));
   const filtered = content.filter((item) => item.title.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()) && (type === 'all' || item.type === type));
@@ -45,7 +46,11 @@ export function RecentContent({ chats, quickTags }: { chats: Chat[]; quickTags: 
   return <>
     <div className="mt-3 flex flex-col gap-2 sm:flex-row"><label className="relative min-w-0 flex-1"><MagnifyingGlass size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" aria-hidden="true" /><span className="sr-only">Search recent content</span><input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} placeholder="Search recent content…" className="w-full rounded-lg border border-line bg-surface py-2 pl-9 pr-3 text-sm outline-none focus:border-accent" /></label><label><span className="sr-only">Filter by content type</span><select value={type} onChange={(event) => { setType(event.target.value as ArtifactType | 'all'); setPage(1); }} className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm outline-none focus:border-accent sm:w-44"><option value="all">All content</option>{presentTypes.map((artifactType) => <option key={artifactType} value={artifactType}>{ARTIFACT_LABELS[artifactType]}</option>)}</select></label></div>
     {filtered.length === 0 ? <p className="mt-4 rounded-lg border border-dashed border-line px-4 py-6 text-center text-sm text-muted">No content matches that search or type.</p> : <>
-      <ul className="mt-3 divide-y divide-line overflow-visible rounded-xl border border-line bg-surface shadow-sm">{pageItems.map((item) => { const Icon = item.type === 'notes' ? Note : item.type === 'mindmap' ? ShareNetwork : FileText; return <li key={item.id} className="flex items-center gap-2 px-2"><Link href={`/chat/${item.chatId}`} className="flex min-w-0 flex-1 items-center gap-4 px-3 py-4 transition-colors hover:bg-accent-soft"><Icon size={18} className="shrink-0 text-muted" aria-hidden="true" /><div className="min-w-0 flex-1"><div className="truncate font-medium">{item.title}</div><div className="mt-1 flex flex-wrap gap-1"><span className="rounded bg-accent-soft px-1.5 py-0.5 text-[11px] text-accent">{ARTIFACT_LABELS[item.type]}</span>{item.meta.map((meta) => <span key={meta} className="rounded bg-background px-1.5 py-0.5 text-[11px] text-muted">{meta}</span>)}{quickTags.filter((tag) => item.tagIds.includes(tag.id)).map((tag) => <span key={tag.id} className="rounded px-1.5 py-0.5 text-[11px] font-medium" style={{ backgroundColor: `${tag.color}18`, color: tag.color }}>{tag.name}</span>)}</div></div><span className="flex shrink-0 items-center gap-1 text-xs text-muted"><Clock size={12} aria-hidden="true" />{timeAgo(item.createdAt)}</span></Link><WorksheetTagMenu chatId={item.chatId} tagIds={item.tagIds} tags={quickTags} /></li>; })}</ul>
+      <ul className="mt-3 divide-y divide-line overflow-visible rounded-xl border border-line bg-surface shadow-sm">{pageItems.map((item) => {
+        const Icon = item.type === 'notes' ? Note : item.type === 'mindmap' ? ShareNetwork : FileText;
+        const tagIds = tagAssignments[item.chatId] ?? item.tagIds;
+        return <li key={item.id} className="flex items-center gap-2 px-2"><Link href={`/chat/${item.chatId}`} className="flex min-w-0 flex-1 items-center gap-4 px-3 py-4 transition-colors hover:bg-accent-soft"><Icon size={18} className="shrink-0 text-muted" aria-hidden="true" /><div className="min-w-0 flex-1"><div className="truncate font-medium">{item.title}</div><div className="mt-1 flex flex-wrap gap-1"><span className="rounded bg-accent-soft px-1.5 py-0.5 text-[11px] text-accent">{ARTIFACT_LABELS[item.type]}</span>{item.meta.map((meta) => <span key={meta} className="rounded bg-background px-1.5 py-0.5 text-[11px] text-muted">{meta}</span>)}{quickTags.filter((tag) => tagIds.includes(tag.id)).map((tag) => <span key={tag.id} className="rounded px-1.5 py-0.5 text-[11px] font-medium" style={{ backgroundColor: `${tag.color}18`, color: tag.color }}>{tag.name}</span>)}</div></div><span className="flex shrink-0 items-center gap-1 text-xs text-muted"><Clock size={12} aria-hidden="true" />{timeAgo(item.createdAt)}</span></Link><WorksheetTagMenu chatId={item.chatId} tagIds={tagIds} tags={quickTags} onTagsChange={(next) => setTagAssignments((current) => ({ ...current, [item.chatId]: next }))} /></li>;
+      })}</ul>
       {totalPages > 1 && <div className="mt-3 flex items-center justify-between text-sm">
         <button type="button" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} className="inline-flex items-center gap-1 rounded-md border border-line bg-surface px-3 py-1.5 font-medium text-muted transition-colors hover:border-accent hover:text-accent disabled:pointer-events-none disabled:opacity-40"><CaretLeft size={14} aria-hidden="true" />Previous</button>
         <span className="text-xs text-muted">Page {currentPage} of {totalPages} · {filtered.length} item{filtered.length === 1 ? '' : 's'}</span>
@@ -55,7 +60,7 @@ export function RecentContent({ chats, quickTags }: { chats: Chat[]; quickTags: 
   </>;
 }
 
-function WorksheetTagMenu({ chatId, tagIds, tags }: { chatId: string; tagIds: string[]; tags: QuickTag[] }) {
+function WorksheetTagMenu({ chatId, tagIds, tags, onTagsChange }: { chatId: string; tagIds: string[]; tags: QuickTag[]; onTagsChange: (tagIds: string[]) => void }) {
   const menuRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
@@ -81,6 +86,7 @@ function WorksheetTagMenu({ chatId, tagIds, tags }: { chatId: string; tagIds: st
       const response = await fetch(`/api/chats/${chatId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tagIds: next }) });
       if (!response.ok) throw new Error();
       setSelected(next);
+      onTagsChange(next);
     } finally { setBusy(false); }
   }
 

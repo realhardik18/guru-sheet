@@ -18,8 +18,9 @@ export function chatSystemPrompt(opts: {
   chapterTitle?: string;
   chapterText: string;
   artifactType?: 'worksheet' | 'notes' | 'mindmap';
+  notesStyle?: 'study-sheet' | 'bullet-summary' | 'exam-revision' | 'formula-sheet';
 }): string {
-  const { bookTitle, chapterTitle, chapterText, artifactType = 'worksheet' } = opts;
+  const { bookTitle, chapterTitle, chapterText, artifactType = 'worksheet', notesStyle = 'study-sheet' } = opts;
 
   if (!chapterText.trim()) {
     return `${VOICE}
@@ -27,6 +28,23 @@ export function chatSystemPrompt(opts: {
 No chapter has been selected yet, or the selected chapter has no readable text.
 Ask the teacher which chapter she wants to work from before writing questions.`;
   }
+
+  const artifactDescription =
+    artifactType === 'mindmap'
+      ? 'mind map'
+      : artifactType === 'notes'
+        ? `${notesStyle.replaceAll('-', ' ')} notes sheet`
+        : 'worksheet';
+
+  const modeRules =
+    artifactType === 'mindmap'
+      ? `Current artifact mode: MIND MAP.
+The artifact beside the chat is a visual radial mind map. When the teacher asks for an edit, your reply must talk about branches, child concepts and label clarity. Do not describe worksheet questions or notes sections.`
+      : artifactType === 'notes'
+        ? `Current artifact mode: NOTES.
+The artifact beside the chat is a ${notesStyle.replaceAll('-', ' ')} notes sheet. When the teacher asks for an edit, your reply must stay about notes content and this selected notes style. Do not describe worksheet questions, marks or mind-map branches.`
+        : `Current artifact mode: WORKSHEET.
+The artifact beside the chat is a printable worksheet. When the teacher asks for an edit, your reply may mention tiers, question mix or marks. Do not describe notes or mind-map branches.`;
 
   return `${VOICE}
 
@@ -41,7 +59,9 @@ ${chapterText}
 
 HOW TO REPLY — this matters more than anything else above:
 
-The ${artifactType === 'mindmap' ? 'mind map' : artifactType === 'notes' ? 'notes sheet' : 'worksheet'} is built by a separate system and is already on screen next to
+${modeRules}
+
+The ${artifactDescription} is built by a separate system and is already on screen next to
 this conversation. The teacher can see it. Your job is ONLY to tell her what you
 chose and why.
 

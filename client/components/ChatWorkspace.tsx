@@ -84,6 +84,7 @@ export function ChatWorkspace({
   const [toast, setToast] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const startedInitialGeneration = useRef(false);
+  const startedInitialArtifactGeneration = useRef(false);
   const activeVersion = versions.find((version) => version.id === activeVersionId) ?? versions[0];
   const worksheet = activeVersion?.worksheet;
   const visiblePreferences = worksheet
@@ -101,7 +102,7 @@ export function ChatWorkspace({
     messages: toUIMessages(chat.messages),
     transport: new DefaultChatTransport({
       api: '/api/chat',
-      body: { bookId: chat.bookId, chapterId: chat.chapterId, artifactType },
+      body: { bookId: chat.bookId, chapterId: chat.chapterId, artifactType, notesStyle: chat.notesStyle },
     }),
   });
 
@@ -211,8 +212,11 @@ export function ChatWorkspace({
   }, []);
 
   useEffect(() => {
-    if (artifactType === 'notes' && !notes) void Promise.resolve().then(() => generateArtifact());
-    if (artifactType === 'mindmap' && !mindMap) void Promise.resolve().then(() => generateArtifact());
+    if (startedInitialArtifactGeneration.current) return;
+    const needsInitialArtifact = (artifactType === 'notes' && !notes) || (artifactType === 'mindmap' && !mindMap);
+    if (!needsInitialArtifact) return;
+    startedInitialArtifactGeneration.current = true;
+    void Promise.resolve().then(() => generateArtifact());
     // Initial artifact generation runs once per newly-created chat.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

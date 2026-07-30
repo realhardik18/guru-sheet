@@ -82,3 +82,17 @@ export async function configureApp(input: {
   await fs.rename(temporaryPath, CONFIG_PATH);
   return config;
 }
+
+/** Updates the teacher-facing profile details without touching their library. */
+export async function updateTeacherName(teacherNameInput: string): Promise<AppConfig> {
+  const teacherName = teacherNameInput.trim();
+  if (!teacherName) throw new Error('Enter your name to save your profile.');
+  if (teacherName.length > 100) throw new Error('Your name is too long.');
+
+  const config = await requireAppConfig();
+  const updated: AppConfig = { ...config, teacherName };
+  const temporaryPath = `${CONFIG_PATH}.${process.pid}.tmp`;
+  await fs.writeFile(temporaryPath, `${JSON.stringify(updated, null, 2)}\n`, 'utf-8');
+  await fs.rename(temporaryPath, CONFIG_PATH);
+  return updated;
+}

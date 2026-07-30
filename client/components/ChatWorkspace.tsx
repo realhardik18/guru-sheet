@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, type FormEvent } from 'react';
 import { useChat } from '@ai-sdk/react';
+import { useRouter } from 'next/navigation';
 import { DefaultChatTransport, type UIMessage } from 'ai';
 import {
   CheckCircle,
@@ -14,11 +15,13 @@ import {
   PencilSimple,
   SlidersHorizontal,
   Tag,
+  Trash,
   WarningCircle,
 } from '@phosphor-icons/react';
 import { WorksheetSheet } from './Worksheet';
+import { MindMapSheet, NotesSheet } from './StudyArtifacts';
 import { DEFAULT_WORKSHEET_PREFERENCES, type Question, type Worksheet, type WorksheetPreferences } from '@/lib/ai/schema';
-import type { Chat, QuickTag, WorksheetVersion } from '@/lib/types';
+import type { Chat, MindMapArtifact, NotesArtifact, QuickTag, WorksheetVersion } from '@/lib/types';
 import { persistChat } from '@/lib/actions';
 
 function toUIMessages(messages: Chat['messages']): UIMessage[] {
@@ -45,12 +48,10 @@ function printFilename(worksheet: Worksheet, chapterLabel: string) {
 export function ChatWorkspace({
   chat,
   chapterLabel,
-  initialVersionId,
   quickTags,
 }: {
   chat: Chat;
   chapterLabel: string;
-  initialVersionId?: string;
   quickTags: QuickTag[];
 }) {
   const [input, setInput] = useState('');
@@ -58,18 +59,21 @@ export function ChatWorkspace({
   const [titleDraft, setTitleDraft] = useState(chat.title);
   const [editingTitle, setEditingTitle] = useState(false);
   const [savingTitle, setSavingTitle] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deletingChat, setDeletingChat] = useState(false);
   const [tagIds, setTagIds] = useState(chat.tagIds ?? []);
   const [tagPickerOpen, setTagPickerOpen] = useState(false);
   const [savingTags, setSavingTags] = useState(false);
   const initialVersions: WorksheetVersion[] = chat.worksheetVersions?.length
-    ? chat.worksheetVersions
+    ? [chat.worksheetVersions[0]]
     : chat.worksheet
-      ? [{ id: 'v1', label: 'Version 1', settings: { questionCount: chat.worksheet.questions.length, format: 'balanced' }, worksheet: chat.worksheet }]
+      ? [{ id: 'v1', label: 'Worksheet', settings: { questionCount: chat.worksheet.questions.length, format: 'balanced' }, worksheet: chat.worksheet }]
       : [];
   const [versions, setVersions] = useState<WorksheetVersion[]>(initialVersions);
-  const [activeVersionId, setActiveVersionId] = useState(
-    initialVersions.some((version) => version.id === initialVersionId) ? initialVersionId! : initialVersions[0]?.id ?? 'v1',
-  );
+  const artifactType = chat.artifactType ?? 'worksheet';
+  const [notes, setNotes] = useState<NotesArtifact | undefined>(chat.notes);
+  const [mindMap, setMindMap] = useState<MindMapArtifact | undefined>(chat.mindMap);
+  const [activeVersionId] = useState(initialVersions[0]?.id ?? 'v1');
   const [generatingVersionId, setGeneratingVersionId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [preferencesOpen, setPreferencesOpen] = useState(false);
@@ -82,17 +86,22 @@ export function ChatWorkspace({
   const startedInitialGeneration = useRef(false);
   const activeVersion = versions.find((version) => version.id === activeVersionId) ?? versions[0];
   const worksheet = activeVersion?.worksheet;
+  const visiblePreferences = worksheet
+    ? { ...DEFAULT_WORKSHEET_PREFERENCES, ...worksheet.preferences, ...(preferencesOpen ? preferencesDraft : {}) }
+    : DEFAULT_WORKSHEET_PREFERENCES;
+  const showWorksheetMarks = visiblePreferences.showSectionMarks;
   const createdOn = new Intl.DateTimeFormat('en-GB', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
   }).format(new Date(chat.createdAt));
+  const router = useRouter();
 
   const { messages, sendMessage, status } = useChat({
     messages: toUIMessages(chat.messages),
     transport: new DefaultChatTransport({
       api: '/api/chat',
-      body: { bookId: chat.bookId, chapterId: chat.chapterId },
+      body: { bookId: chat.bookId, chapterId: chat.chapterId, artifactType },
     }),
   });
 
@@ -127,8 +136,18 @@ export function ChatWorkspace({
   // Persist once both the reply and the sheet have settled.
   useEffect(() => {
     if (busy) return;
-    void persistChat(chat.id, messages.map((m) => ({ role: m.role as 'user' | 'assistant', content: textOf(m) })), versions);
-  }, [busy, messages, versions, chat.id]);
+    void persistChat(chat.id, messages.map((m) => ({ role: m.role as 'user' | 'assistant', content: textOf(m) })), versions, { notes, mindMap });
+  }, [busy, messages, versions, notes, mindMap, chat.id]);
+
+  async function generateArtifact(instruction = '') {
+    setGeneratingVersionId('artifact'); setNotice(null);
+    try {
+      const res = await fetch('/api/artifact', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bookId: chat.bookId, chapterId: chat.chapterId, type: artifactType, style: chat.notesStyle, instruction, previous: artifactType === 'notes' ? notes : mindMap }) });
+      const data = await res.json(); if (!res.ok) { setNotice(data.error ?? 'Could not generate this artifact.'); return; }
+      if (artifactType === 'notes') setNotes(data.artifact); else setMindMap(data.artifact);
+      if (instruction) showToast('Artifact updated.');
+    } catch { setNotice('Could not reach the model.'); } finally { setGeneratingVersionId(null); }
+  }
 
   async function generateWorksheet(versionId: string, instruction: string, previous?: Worksheet, avoidQuestions: string[] = []) {
     const version = versions.find((item) => item.id === versionId);
@@ -178,6 +197,13 @@ export function ChatWorkspace({
       }
     })();
     // Initial plans are deliberately generated once, in order, to avoid duplicates.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (artifactType === 'notes' && !notes) void Promise.resolve().then(() => generateArtifact());
+    if (artifactType === 'mindmap' && !mindMap) void Promise.resolve().then(() => generateArtifact());
+    // Initial artifact generation runs once per newly-created chat.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -231,7 +257,8 @@ export function ChatWorkspace({
     // Chat and worksheet run in parallel: she reads the reply while the sheet
     // is still rendering, so neither waits on the other.
     void sendMessage({ text: trimmed });
-    if (activeVersion) void generateWorksheet(activeVersion.id, trimmed, worksheet);
+    if (artifactType === 'worksheet' && activeVersion) void generateWorksheet(activeVersion.id, trimmed, worksheet);
+    if (artifactType !== 'worksheet') void generateArtifact(trimmed);
   }
 
   function printWorksheet() {
@@ -269,6 +296,10 @@ export function ChatWorkspace({
     setPreferencesDraft((current) => ({ ...current, dateValue: new Intl.DateTimeFormat('en-CA').format(new Date()) }));
   }
 
+  function clearDate() {
+    setPreferencesDraft((current) => ({ ...current, dateValue: '' }));
+  }
+
   async function saveTitle(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const title = titleDraft.trim();
@@ -290,6 +321,20 @@ export function ChatWorkspace({
     }
   }
 
+  async function deleteCurrentChat() {
+    setDeletingChat(true);
+    try {
+      const response = await fetch(`/api/chats/${chat.id}`, { method: 'DELETE' });
+      if (!response.ok) throw new Error();
+      router.replace('/');
+      router.refresh();
+    } catch {
+      setNotice('Could not delete this chat.');
+      setDeletingChat(false);
+      setDeleteOpen(false);
+    }
+  }
+
   return (
     <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
       {toast && (
@@ -298,6 +343,7 @@ export function ChatWorkspace({
           {toast}
         </div>
       )}
+      {deleteOpen && <div className="no-print fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 p-4 backdrop-blur-sm" role="presentation" onMouseDown={() => !deletingChat && setDeleteOpen(false)}><section role="dialog" aria-modal="true" aria-labelledby="delete-chat-title" className="w-full max-w-sm rounded-2xl border border-line bg-surface p-6 shadow-2xl" onMouseDown={(event) => event.stopPropagation()}><span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#a14f24]/10 text-[#a14f24]"><Trash size={22} weight="bold" /></span><h2 id="delete-chat-title" className="mt-4 text-xl font-semibold tracking-[-0.03em]">Delete this chat?</h2><p className="mt-2 text-sm leading-6 text-muted">This permanently removes the chat and its worksheet.</p><div className="mt-6 flex justify-end gap-2"><button type="button" disabled={deletingChat} onClick={() => setDeleteOpen(false)} className="rounded-lg px-3 py-2 text-sm font-medium text-muted hover:bg-accent-soft disabled:opacity-50">Cancel</button><button type="button" disabled={deletingChat} onClick={() => void deleteCurrentChat()} className="inline-flex items-center gap-1.5 rounded-lg bg-[#a14f24] px-4 py-2 text-sm font-semibold text-white hover:bg-[#843d1c] disabled:opacity-50"><Trash size={15} weight="bold" />{deletingChat ? 'Deleting…' : 'Delete chat'}</button></div></section></div>}
       {/* ---------------- Chat ---------------- */}
       <section className="no-print flex min-h-0 w-full flex-col border-line font-sans lg:w-[560px] lg:shrink-0 lg:border-r">
         <header className="flex items-start border-b border-line px-5 py-3">
@@ -322,6 +368,9 @@ export function ChatWorkspace({
                 <h1 className="truncate font-semibold">{chatTitle}</h1>
                 <button type="button" onClick={() => { setTitleDraft(chatTitle); setEditingTitle(true); }} aria-label="Rename chat" title="Rename chat" className="shrink-0 rounded p-1 text-muted transition-colors hover:bg-accent-soft hover:text-accent">
                   <PencilSimple size={14} weight="bold" aria-hidden="true" />
+                </button>
+                <button type="button" onClick={() => setDeleteOpen(true)} aria-label="Delete chat" title="Delete chat" className="shrink-0 rounded p-1 text-muted transition-colors hover:bg-[#a14f24]/10 hover:text-[#a14f24]">
+                  <Trash size={14} weight="bold" aria-hidden="true" />
                 </button>
               </div>
             )}
@@ -351,7 +400,7 @@ export function ChatWorkspace({
           {generatingVersionId && (
             <div className="flex items-center gap-1.5 text-xs text-muted">
               <NotePencil size={14} className="animate-pulse text-accent" aria-hidden="true" />
-                <span className="shimmer-text">Building {versions.find((version) => version.id === generatingVersionId)?.label ?? 'the worksheet'}…</span>
+                <span className="shimmer-text">Building your worksheet…</span>
             </div>
           )}
         </div>
@@ -373,7 +422,7 @@ export function ChatWorkspace({
                   submit(input);
                 }
               }}
-              placeholder="Make a 20-minute worksheet, three levels…"
+              placeholder="Type over here"
               className="min-w-0 flex-1 bg-transparent py-1.5 text-sm outline-none"
             />
             <button
@@ -394,27 +443,14 @@ export function ChatWorkspace({
 
       {/* ---------------- Worksheet ---------------- */}
       <section className="print-root min-h-0 flex-1 overflow-y-auto bg-background p-5">
-        {versions.length > 1 && (
-          <div className="no-print mx-auto mb-3 flex max-w-[210mm] rounded-lg border border-line bg-surface p-1">
-            {versions.map((version) => (
-              <button
-                key={version.id}
-                type="button"
-                onClick={() => { setActiveVersionId(version.id); setSelectedQuestions([]); }}
-                className={`inline-flex flex-1 items-center justify-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-semibold transition-colors ${activeVersion?.id === version.id ? 'bg-accent text-white' : 'text-muted hover:bg-accent-soft hover:text-accent'}`}
-              >
-                {generatingVersionId === version.id && <CircleNotch size={13} className="animate-spin" aria-hidden="true" />}
-                {version.label}
-              </button>
-            ))}
-          </div>
-        )}
-        {worksheet ? (
+        {artifactType !== 'worksheet' ? (
+          <ArtifactPreview type={artifactType} notes={notes} mindMap={mindMap} generating={generatingVersionId === 'artifact'} onPrint={() => { const previousTitle = document.title; document.title = artifactType === 'notes' ? (notes?.title ?? 'GuruSheet notes') : (mindMap?.title ?? 'GuruSheet mind map'); window.addEventListener('afterprint', () => { document.title = previousTitle; }, { once: true }); window.print(); }} />
+        ) : worksheet ? (
           <>
             <div className="no-print mx-auto mb-3 flex max-w-[210mm] flex-wrap items-center gap-2">
               <span className="flex items-center gap-1.5 text-sm text-muted">
                 <ListChecks size={15} aria-hidden="true" />
-                {worksheet.questions.length} questions · {worksheet.totalMarks} marks
+                {worksheet.questions.length} questions{showWorksheetMarks ? ` · ${worksheet.totalMarks} marks` : ''}
               </span>
               <button onClick={openPreferences} className="inline-flex items-center gap-1.5 rounded-md border border-line bg-surface px-3 py-1.5 text-sm transition-colors hover:border-accent">
                 <SlidersHorizontal size={15} aria-hidden="true" />
@@ -429,10 +465,10 @@ export function ChatWorkspace({
               </button>
             </div>
             {preferencesOpen && <form onSubmit={savePreferences} className="no-print mx-auto mb-3 max-w-[210mm] rounded-xl border border-line bg-surface p-4 shadow-sm">
-              <div><h2 className="text-sm font-semibold">Worksheet preferences</h2><p className="mt-0.5 text-xs text-muted">Changes appear in the preview immediately and apply to {activeVersion?.label ?? 'this worksheet'} when saved.</p></div>
+              <div><h2 className="text-sm font-semibold">Worksheet preferences</h2><p className="mt-0.5 text-xs text-muted">Changes appear in the preview immediately and apply when saved.</p></div>
               <label className="mt-4 block text-sm font-medium">Worksheet title<input required maxLength={160} value={worksheetTitleDraft} onChange={(event) => setWorksheetTitleDraft(event.target.value)} className="mt-1.5 block w-full rounded-md border border-line bg-background px-3 py-2 text-sm outline-none focus:border-accent" /></label>
-              <div className="mt-4 grid gap-2 sm:grid-cols-3"><PreferenceToggle checked={preferencesDraft.showName} onChange={(showName) => setPreferencesDraft((current) => ({ ...current, showName }))} label="Show Name field" /><PreferenceToggle checked={preferencesDraft.showClass} onChange={(showClass) => setPreferencesDraft((current) => ({ ...current, showClass }))} label="Show Class field" /><PreferenceToggle checked={preferencesDraft.showSectionMarks} onChange={(showSectionMarks) => setPreferencesDraft((current) => ({ ...current, showSectionMarks }))} label="Show section marks" /></div>
-              <div className="mt-4 rounded-lg border border-line bg-background p-3"><PreferenceToggle checked={preferencesDraft.showDate} onChange={(showDate) => setPreferencesDraft((current) => ({ ...current, showDate }))} label="Show Date field" />{preferencesDraft.showDate && <div className="mt-3 flex flex-wrap gap-2"><label className="min-w-[11rem] flex-1 text-sm font-medium">Date to prefill<input type="date" value={preferencesDraft.dateValue} onChange={(event) => setPreferencesDraft((current) => ({ ...current, dateValue: event.target.value }))} className="mt-1 block w-full rounded-md border border-line bg-surface px-3 py-2 text-sm outline-none focus:border-accent" /></label><button type="button" onClick={useToday} className="mt-6 h-9 rounded-md border border-line bg-surface px-3 text-sm font-medium text-accent hover:border-accent">Use today</button></div>}</div>
+              <div className="mt-4 grid gap-2 sm:grid-cols-3"><PreferenceToggle checked={preferencesDraft.showName} onChange={(showName) => setPreferencesDraft((current) => ({ ...current, showName }))} label="Show Name field" /><PreferenceToggle checked={preferencesDraft.showClass} onChange={(showClass) => setPreferencesDraft((current) => ({ ...current, showClass }))} label="Show Class field" /><PreferenceToggle checked={preferencesDraft.showSectionMarks} onChange={(showSectionMarks) => setPreferencesDraft((current) => ({ ...current, showSectionMarks }))} label="Show all marks" /></div>
+              <div className="mt-4 rounded-lg border border-line bg-background p-3"><PreferenceToggle checked={preferencesDraft.showDate} onChange={(showDate) => setPreferencesDraft((current) => ({ ...current, showDate }))} label="Show Date field" />{preferencesDraft.showDate && <div className="mt-3 flex flex-wrap gap-2"><label className="min-w-[11rem] flex-1 text-sm font-medium">Date to prefill<input type="date" value={preferencesDraft.dateValue} onChange={(event) => setPreferencesDraft((current) => ({ ...current, dateValue: event.target.value }))} className="mt-1 block w-full rounded-md border border-line bg-surface px-3 py-2 text-sm outline-none focus:border-accent" /></label><button type="button" onClick={useToday} className="mt-6 h-9 rounded-md border border-line bg-surface px-3 text-sm font-medium text-accent hover:border-accent">Use today</button><button type="button" onClick={clearDate} className="mt-6 h-9 rounded-md border border-line bg-surface px-3 text-sm font-medium text-muted hover:border-accent">Leave blank</button></div>}</div>
               <div className="mt-4 flex justify-end gap-2"><button type="button" onClick={() => setPreferencesOpen(false)} className="rounded-md px-3 py-2 text-sm font-medium text-muted hover:bg-accent-soft">Cancel</button><button type="submit" className="rounded-md bg-accent px-3 py-2 text-sm font-semibold text-white hover:bg-[#124637]">Save preferences</button></div>
             </form>}
             <div className="relative">
@@ -461,8 +497,7 @@ export function ChatWorkspace({
           <div className="no-print flex h-full items-center justify-center">
             <div className="flex max-w-xs flex-col items-center gap-3 text-center">
               <CircleNotch size={30} className="animate-spin text-accent" aria-hidden="true" />
-              <p className="text-sm font-medium">Generating {versions.find((version) => version.id === generatingVersionId)?.label}…</p>
-              <p className="text-xs leading-5 text-muted">You can switch between versions while this runs.</p>
+              <p className="text-sm font-medium">Generating your worksheet…</p>
             </div>
           </div>
         ) : (
@@ -482,6 +517,12 @@ export function ChatWorkspace({
 
 function PreferenceToggle({ checked, onChange, label }: { checked: boolean; onChange: (value: boolean) => void; label: string }) {
   return <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-line bg-background px-3 py-2 text-sm"><input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} className="accent-[var(--accent)]" />{label}</label>;
+}
+
+function ArtifactPreview({ type, notes, mindMap, generating, onPrint }: { type: 'notes' | 'mindmap'; notes?: NotesArtifact; mindMap?: MindMapArtifact; generating: boolean; onPrint: () => void }) {
+  const artifact = type === 'notes' ? notes : mindMap;
+  if (!artifact) return <div className="no-print flex h-full items-center justify-center"><div className="flex flex-col items-center gap-3 text-sm text-muted"><CircleNotch size={28} className="animate-spin text-accent" />Generating your {type === 'notes' ? 'notes' : 'mind map'}…</div></div>;
+  return <><div className="no-print mx-auto mb-3 flex max-w-[210mm] items-center"><span className="text-sm text-muted">{type === 'notes' ? 'Short notes' : 'Radial mind map'} · edit through chat</span><button onClick={onPrint} className="ml-auto inline-flex items-center gap-1.5 rounded-md border border-line bg-surface px-3 py-1.5 text-sm hover:border-accent"><Printer size={15} />{type === 'mindmap' ? 'Export PDF' : 'Print / Save as PDF'}</button></div><div className="relative">{generating && <div className="no-print absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-surface/45 backdrop-blur-sm"><div className="flex items-center gap-2 rounded-full border border-line bg-surface px-4 py-2 text-sm font-medium text-accent shadow-md"><CircleNotch size={16} className="animate-spin" />Updating your {type === 'notes' ? 'notes' : 'mind map'}…</div></div>}<div className={generating ? 'pointer-events-none blur-[2px]' : ''}>{type === 'notes' ? <NotesSheet notes={notes!} /> : <MindMapSheet map={mindMap!} />}</div></div></>;
 }
 
 function Dots() {

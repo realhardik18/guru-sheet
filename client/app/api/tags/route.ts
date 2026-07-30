@@ -1,4 +1,5 @@
 import { createQuickTag, deleteQuickTag, getAppConfig } from '@/lib/config';
+import { removeTagFromChats } from '@/lib/store';
 
 export async function POST(request: Request) {
   if (!(await getAppConfig())) return Response.json({ error: 'Complete GuruSheet setup first.' }, { status: 409 });
@@ -15,5 +16,6 @@ export async function DELETE(request: Request) {
   const { tagId } = await request.json().catch(() => ({}));
   if (typeof tagId !== 'string') return Response.json({ error: 'Tag not found.' }, { status: 400 });
   await deleteQuickTag(tagId);
+  await removeTagFromChats(tagId);
   return Response.json({ ok: true });
 }

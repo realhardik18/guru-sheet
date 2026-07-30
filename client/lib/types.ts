@@ -49,6 +49,21 @@ export type WorksheetVersion = {
   worksheet?: Worksheet;
 };
 
+export type ArtifactType = 'worksheet' | 'notes' | 'mindmap';
+export type NotesStyle = 'study-sheet' | 'bullet-summary' | 'exam-revision' | 'formula-sheet';
+
+export type NotesArtifact = {
+  title: string;
+  style: NotesStyle;
+  sections: Array<{ heading: string; points: string[] }>;
+  recap: string[];
+};
+
+export type MindMapArtifact = {
+  title: string;
+  branches: Array<{ label: string; children: string[] }>;
+};
+
 export type Chat = {
   id: string;
   title: string;
@@ -58,6 +73,10 @@ export type Chat = {
   messages: ChatMessage[];
   /** Reusable organization labels, managed from the dashboard. */
   tagIds?: string[];
+  artifactType?: ArtifactType;
+  notesStyle?: NotesStyle;
+  notes?: NotesArtifact;
+  mindMap?: MindMapArtifact;
   /** New chats retain independent printable versions; worksheet stays for old chats. */
   worksheetVersions?: WorksheetVersion[];
   worksheet?: Worksheet;

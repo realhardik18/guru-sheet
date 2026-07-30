@@ -156,6 +156,7 @@ function QuestionBlock({
   onSelect,
   onClose,
   onRevise,
+  showMarks,
 }: {
   q: Question;
   number: number;
@@ -165,6 +166,7 @@ function QuestionBlock({
   onSelect: () => void;
   onClose: () => void;
   onRevise: (instruction: string, targetType?: Question['type']) => void;
+  showMarks: boolean;
 }) {
   return (
     <li
@@ -209,7 +211,7 @@ function QuestionBlock({
           {(['short_answer', 'long'].includes(q.type)) && <RuledLines count={q.type === 'long' ? 5 : 3} />}
         </div>
         <div className="flex w-14 shrink-0 flex-col items-end gap-1 text-right">
-          <span className="text-sm text-muted tabular-nums">[{q.marks}]</span>
+          {showMarks && <span className="text-sm text-muted tabular-nums">[{q.marks}]</span>}
           {q.sourcePage != null && (
             <span className="citation flex items-center gap-0.5 text-[10px] text-muted">
               <BookmarkSimple size={10} aria-hidden="true" />
@@ -280,10 +282,10 @@ export function WorksheetSheet({
             <h1 className="mt-1 text-2xl font-bold leading-tight">{titleOverride || worksheet.topic}</h1>
             <p className="mt-1 text-sm text-muted">{worksheet.classLevel}</p>
           </div>
-          <div className="score-box shrink-0 rounded-md border border-foreground px-3.5 py-2 text-center">
+          {preferences.showSectionMarks && <div className="score-box shrink-0 rounded-md border border-foreground px-3.5 py-2 text-center">
             <div className="text-[10px] font-semibold uppercase tracking-wide text-muted">Score</div>
             <div className="mt-0.5 text-sm">____ / {worksheet.totalMarks}</div>
-          </div>
+          </div>}
         </div>
         <div className="mt-5 grid grid-cols-1 gap-x-8 gap-y-3 text-sm sm:grid-cols-3">
           {preferences.showName && <div className="flex items-end gap-2"><span className="text-muted">Name</span><span className="flex-1 border-b border-foreground" /></div>}
@@ -327,6 +329,7 @@ export function WorksheetSheet({
                   onSelect={() => onSelectQuestion?.(q)}
                   onClose={() => onCloseQuestion?.(q)}
                   onRevise={(instruction, targetType) => onReviseQuestion?.(q, worksheet.questions.indexOf(q), instruction, targetType)}
+                  showMarks={preferences.showSectionMarks}
                 />
               ))}
             </ol>

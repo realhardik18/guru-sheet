@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { getBook, saveChat, getChat } from './store';
-import type { Chat, WorksheetVersion, WorksheetVersionSettings } from './types';
+import type { ArtifactType, Chat, NotesStyle, WorksheetVersion, WorksheetVersionSettings } from './types';
 import { requireConfiguredPage } from './setup';
 
 function newId() {
@@ -24,28 +24,22 @@ export async function startChat(formData: FormData) {
   await requireConfiguredPage();
   const bookId = String(formData.get('bookId') ?? '');
   const chapterId = String(formData.get('chapterId') ?? '');
+  const requestedType = String(formData.get('artifactType') ?? 'worksheet');
+  const artifactType: ArtifactType = requestedType === 'notes' || requestedType === 'mindmap' ? requestedType : 'worksheet';
+  const requestedNotesStyle = String(formData.get('notesStyle') ?? 'study-sheet');
+  const notesStyle: NotesStyle = ['study-sheet', 'bullet-summary', 'exam-revision', 'formula-sheet'].includes(requestedNotesStyle)
+    ? requestedNotesStyle as NotesStyle : 'study-sheet';
 
   const book = await getBook(bookId);
   const chapter = book?.chapters.find((c) => c.id === chapterId);
 
-  let settings: WorksheetVersionSettings[] = [{ questionCount: 10, format: 'balanced' }];
+  let settings: WorksheetVersionSettings = { questionCount: 10, format: 'balanced' };
   try {
-    const parsed = JSON.parse(String(formData.get('versionPlans') ?? '')) as unknown;
-    if (Array.isArray(parsed) && parsed.length >= 1 && parsed.length <= 3) {
-      const valid = parsed.every((item) => {
-        const plan = item as Partial<WorksheetVersionSettings>;
-        return Number.isInteger(plan.questionCount) && plan.questionCount! >= 5 && plan.questionCount! <= 25 &&
-          ['balanced', 'more-mcqs', 'more-written'].includes(String(plan.format)) &&
-          (plan.difficulty == null || ['easier', 'challenge'].includes(String(plan.difficulty)));
-      });
-      if (valid) settings = parsed as WorksheetVersionSettings[];
-    }
+    const plan = JSON.parse(String(formData.get('worksheetSettings') ?? '')) as Partial<WorksheetVersionSettings>;
+    const valid = Number.isInteger(plan.questionCount) && plan.questionCount! >= 5 && plan.questionCount! <= 25 && ['balanced', 'more-mcqs', 'more-written'].includes(String(plan.format)) && (plan.difficulty == null || ['easier', 'challenge'].includes(String(plan.difficulty)));
+    if (valid) settings = plan as WorksheetVersionSettings;
   } catch { /* Use the sensible default when a stale form submits. */ }
-  const worksheetVersions: WorksheetVersion[] = settings.map((setting, index) => ({
-    id: `v${index + 1}`,
-    label: `Version ${index + 1}`,
-    settings: setting,
-  }));
+  const worksheetVersions: WorksheetVersion[] = [{ id: 'v1', label: 'Worksheet', settings }];
 
   const chat: Chat = {
     id: newId(),
@@ -54,7 +48,9 @@ export async function startChat(formData: FormData) {
     chapterId: chapterId || undefined,
     createdAt: new Date().toISOString(),
     messages: [],
-    worksheetVersions,
+    artifactType,
+    notesStyle: artifactType === 'notes' ? notesStyle : undefined,
+    worksheetVersions: artifactType === 'worksheet' ? worksheetVersions : undefined,
   };
 
   await saveChat(chat);
@@ -67,6 +63,7 @@ export async function persistChat(
   chatId: string,
   messages: Chat['messages'],
   worksheetVersions?: WorksheetVersion[],
+  artifact?: Pick<Chat, 'notes' | 'mindMap'>,
 ) {
   await requireConfiguredPage();
   const existing = await getChat(chatId);
@@ -75,6 +72,8 @@ export async function persistChat(
     ...existing,
     messages,
     worksheetVersions: worksheetVersions ?? existing.worksheetVersions,
+    notes: artifact?.notes ?? existing.notes,
+    mindMap: artifact?.mindMap ?? existing.mindMap,
     // Keep legacy consumers and existing saved data interoperable.
     worksheet: worksheetVersions?.find((version) => version.worksheet)?.worksheet ?? existing.worksheet,
   });

@@ -20,7 +20,8 @@ export async function POST(req: Request) {
     messages,
     bookId,
     chapterId,
-  }: { messages: UIMessage[]; bookId?: string; chapterId?: string } =
+    artifactType,
+  }: { messages: UIMessage[]; bookId?: string; chapterId?: string; artifactType?: 'worksheet' | 'notes' | 'mindmap' } =
     await req.json();
 
   const [book, chapterText] = await Promise.all([
@@ -34,6 +35,7 @@ export async function POST(req: Request) {
       bookTitle: book?.title,
       chapterTitle: book?.chapters.find((c) => c.id === chapterId)?.title,
       chapterText,
+      artifactType,
     }),
     messages: await convertToModelMessages(messages),
   });

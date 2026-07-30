@@ -57,7 +57,14 @@ export default async function CollectionsPage() {
         </section>
       )}
 
-      {collections.length === 0 && individualBooks.length === 0 && <p className="mt-8 text-sm text-muted">Nothing imported yet.</p>}
+      {collections.length === 0 && individualBooks.length === 0 && (
+        <section className="mt-16 flex min-h-64 flex-col items-center justify-center rounded-2xl border border-dashed border-line bg-surface px-6 text-center">
+          <FolderOpen size={34} className="text-accent" weight="duotone" aria-hidden="true" />
+          <h2 className="mt-4 text-2xl font-semibold tracking-[-0.03em]">Nothing imported yet</h2>
+          <p className="mt-2 text-sm text-muted">Import your first book to start building your collections.</p>
+          <Link href="/library" className="mt-5 text-sm font-semibold text-accent underline underline-offset-4 hover:text-[#124637]">Go to import books</Link>
+        </section>
+      )}
     </main>
   );
 }

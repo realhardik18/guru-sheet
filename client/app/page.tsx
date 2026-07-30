@@ -1,8 +1,8 @@
 import Link from 'next/link';
 import { Books, FileText, Plus, Stack } from '@phosphor-icons/react/dist/ssr';
-import { listBooks, listChats } from '@/lib/store';
+import { listBooks, listChats, listCollections } from '@/lib/store';
 import { requireConfiguredPage } from '@/lib/setup';
-import { RecentWorksheets } from '@/components/RecentWorksheets';
+import { RecentContent } from '@/components/RecentWorksheets';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,12 +15,12 @@ function greeting() {
 
 export default async function Dashboard() {
   const config = await requireConfiguredPage();
-  const [books, chats] = await Promise.all([listBooks(), listChats()]);
+  const [books, chats, collections] = await Promise.all([listBooks(), listChats(), listCollections()]);
   const chapterCount = books.reduce((n, b) => n + b.chapters.length, 0);
-  const worksheetCount = chats.reduce(
-    (count, chat) => count + (chat.worksheetVersions?.filter((version) => version.worksheet).length ?? (chat.worksheet ? 1 : 0)),
-    0,
-  );
+  const contentCount = chats.reduce((count, chat) => {
+    const worksheets = chat.worksheetVersions?.filter((version) => version.worksheet).length ?? (chat.worksheet ? 1 : 0);
+    return count + worksheets + (chat.notes ? 1 : 0) + (chat.mindMap ? 1 : 0);
+  }, 0);
 
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 overflow-y-auto px-6 py-8 sm:px-10 sm:py-10">
@@ -53,9 +53,9 @@ export default async function Dashboard() {
 
       <section className="mt-9 grid gap-3 sm:grid-cols-3">
         {[
-          { label: 'Books uploaded', value: books.length, Icon: Books },
+          { label: 'Collections uploaded', value: collections.length, Icon: Books },
           { label: 'Chapters indexed', value: chapterCount, Icon: Stack },
-          { label: 'Worksheets created', value: worksheetCount, Icon: FileText },
+          { label: 'Content created', value: contentCount, Icon: FileText },
         ].map((s) => (
           <div
             key={s.label}
@@ -74,9 +74,9 @@ export default async function Dashboard() {
 
       <section className="mt-10">
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold tracking-[-0.02em]">Recent worksheets</h2>
+          <h2 className="text-base font-semibold tracking-[-0.02em]">Recent content</h2>
         </div>
-        <RecentWorksheets chats={chats} quickTags={config.quickTags ?? []} />
+        <RecentContent chats={chats} quickTags={config.quickTags ?? []} />
       </section>
     </main>
   );

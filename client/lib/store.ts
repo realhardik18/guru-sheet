@@ -248,6 +248,14 @@ export async function updateChatTags(chatId: string, tagIds: string[]): Promise<
   return true;
 }
 
+export async function removeTagFromChats(tagId: string): Promise<void> {
+  const chats = await listChats();
+  await Promise.all(chats.map(async (chat) => {
+    if (!chat.tagIds?.includes(tagId)) return;
+    await saveChat({ ...chat, tagIds: chat.tagIds.filter((id) => id !== tagId) });
+  }));
+}
+
 export async function renameChat(chatId: string, title: string): Promise<boolean> {
   const chat = await getChat(chatId);
   if (!chat) return false;

@@ -41,6 +41,61 @@ body {
   font-family: var(--font-poppins), sans-serif;
 }
 
+.mindmap-branch {
+  position: relative;
+}
+
+.mindmap-children {
+  position: relative;
+  padding-left: 1rem;
+}
+
+.mindmap-children::before {
+  content: "";
+  position: absolute;
+  bottom: 0.65rem;
+  left: 0.25rem;
+  top: 0.65rem;
+  width: 1px;
+  background: var(--accent);
+  opacity: 0.45;
+}
+
+.mindmap-child {
+  position: relative;
+}
+
+.mindmap-child::before {
+  content: "";
+  position: absolute;
+  left: -0.75rem;
+  top: 50%;
+  width: 0.75rem;
+  height: 1px;
+  background: var(--accent);
+  opacity: 0.45;
+}
+
+@media (min-width: 640px) {
+  .mindmap-branch::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    width: 1.5rem;
+    height: 1px;
+    background: var(--accent);
+    opacity: 0.55;
+  }
+
+  .mindmap-column-left .mindmap-branch::after {
+    right: -1.5rem;
+  }
+
+  .mindmap-column-right .mindmap-branch::after {
+    left: -1.5rem;
+  }
+}
+
 /* Running footer only exists for the printed page — see @media print below. */
 .print-footer { display: none; }
 
@@ -139,6 +194,20 @@ body {
   .worksheet .mcq-option,
   .worksheet .option-letter {
     border-color: #000 !important;
+  }
+
+  .mindmap-center,
+  .mindmap-branch,
+  .mindmap-child {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .mindmap-branch::after,
+  .mindmap-child::before,
+  .mindmap-children::before {
+    background: #000 !important;
+    opacity: 1 !important;
   }
 
   /* Never split a question across two pages — the child loses the thread. */

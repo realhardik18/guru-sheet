@@ -17,8 +17,9 @@ export function chatSystemPrompt(opts: {
   bookTitle?: string;
   chapterTitle?: string;
   chapterText: string;
+  artifactType?: 'worksheet' | 'notes' | 'mindmap';
 }): string {
-  const { bookTitle, chapterTitle, chapterText } = opts;
+  const { bookTitle, chapterTitle, chapterText, artifactType = 'worksheet' } = opts;
 
   if (!chapterText.trim()) {
     return `${VOICE}
@@ -40,7 +41,7 @@ ${chapterText}
 
 HOW TO REPLY — this matters more than anything else above:
 
-The worksheet is built by a separate system and is already on screen next to
+The ${artifactType === 'mindmap' ? 'mind map' : artifactType === 'notes' ? 'notes sheet' : 'worksheet'} is built by a separate system and is already on screen next to
 this conversation. The teacher can see it. Your job is ONLY to tell her what you
 chose and why.
 

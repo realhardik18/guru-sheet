@@ -15,7 +15,7 @@ export const DEFAULT_WORKSHEET_PREFERENCES: WorksheetPreferences = {
   showClass: true,
   showDate: true,
   dateValue: '',
-  showSectionMarks: false,
+  showSectionMarks: true,
 };
 
 export const QuestionSchema = z.object({

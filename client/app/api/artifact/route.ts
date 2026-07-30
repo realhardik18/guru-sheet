@@ -1,4 +1,4 @@
-import { generateText, Output } from 'ai';
+import { generateText } from 'ai';
 import { z } from 'zod';
 import { worksheetModel } from '@/lib/ai/model';
 import { getBook, getChapterText } from '@/lib/store';
@@ -15,6 +15,53 @@ const MindMapSchema = z.object({
     children: z.array(z.string().max(36)).min(1).max(4),
   })).min(3).max(6),
 });
+const JsonEnvelopeSchema = z.object({
+  title: z.string(),
+  sections: z.array(z.object({ heading: z.string(), points: z.array(z.string()).min(1) })).optional(),
+  recap: z.array(z.string()).optional(),
+  branches: z.array(z.object({
+    label: z.string().max(24),
+    children: z.array(z.string().max(36)).min(1).max(4),
+  })).optional(),
+});
+
+function firstJsonObject(text: string) {
+  const start = text.indexOf('{');
+  const end = text.lastIndexOf('}');
+  if (start === -1 || end === -1 || end <= start) throw new Error('model did not return a JSON object');
+  return text.slice(start, end + 1);
+}
+
+function parseModelJson(text: string) {
+  const raw = firstJsonObject(text);
+  try {
+    return JSON.parse(raw);
+  } catch {
+    const repaired = raw
+      .replace(/,\s*([}\]])/g, '$1')
+      .replace(/,\s*"style\\":\\"[^"]+\\"/g, '')
+      .replace(/,\s*"style"\s*:\s*"[^"]+"/g, '');
+    return JSON.parse(repaired);
+  }
+}
+
+function normalizeNotes(output: unknown, style: NotesStyle) {
+  const envelope = JsonEnvelopeSchema.parse(output);
+  const parsed = NotesSchema.parse({
+    title: envelope.title,
+    sections: envelope.sections,
+    recap: envelope.recap,
+  });
+  return { ...parsed, style };
+}
+
+function normalizeMindMap(output: unknown) {
+  const envelope = JsonEnvelopeSchema.parse(output);
+  return MindMapSchema.parse({
+    title: envelope.title,
+    branches: envelope.branches,
+  });
+}
 
 const notesStyleInstruction: Record<NotesStyle, string> = {
   'study-sheet': [
@@ -41,7 +88,7 @@ const notesStyleInstruction: Record<NotesStyle, string> = {
 
 function notesPrompt(style: NotesStyle, instruction?: string, previous?: NotesArtifact | MindMapArtifact) {
   if (!previous) {
-    return `Create the initial ${style.replaceAll('-', ' ')} notes artifact. Return only the notes schema.`;
+    return `Create the initial ${style.replaceAll('-', ' ')} notes artifact. Return one valid JSON object only. The JSON must have exactly these top-level keys: title, sections, recap. Do not include style. Do not wrap the JSON in markdown.`;
   }
   return [
     `Revise the existing ${style.replaceAll('-', ' ')} notes artifact.`,
@@ -49,13 +96,13 @@ function notesPrompt(style: NotesStyle, instruction?: string, previous?: NotesAr
     `Teacher request: ${instruction?.trim() || 'Improve the notes while preserving the selected style.'}`,
     'Existing notes JSON:',
     JSON.stringify(previous),
-    'Return the complete updated notes schema.',
+    'Return one valid JSON object only. The JSON must have exactly these top-level keys: title, sections, recap. Do not include style. Do not wrap the JSON in markdown.',
   ].join('\n');
 }
 
 function mindMapPrompt(instruction?: string, previous?: NotesArtifact | MindMapArtifact) {
   if (!previous) {
-    return 'Create the initial mind map artifact with compact labels only. Return only the mind-map schema.';
+    return 'Create the initial mind map artifact with compact labels only. Return one valid JSON object only. The JSON must have exactly these top-level keys: title, branches. Do not wrap the JSON in markdown.';
   }
   return [
     'Revise the existing mind map artifact.',
@@ -64,7 +111,7 @@ function mindMapPrompt(instruction?: string, previous?: NotesArtifact | MindMapA
     `Teacher request: ${instruction?.trim() || 'Improve the mind map while preserving the radial structure.'}`,
     'Existing mind map JSON:',
     JSON.stringify(previous),
-    'Return the complete updated mind-map schema.',
+    'Return one valid JSON object only. The JSON must have exactly these top-level keys: title, branches. Do not wrap the JSON in markdown.',
   ].join('\n');
 }
 
@@ -81,14 +128,16 @@ export async function POST(req: Request) {
   const source = `Use only the chapter text below. Never invent facts. Keep the result concise and classroom-printable.\n\n--- CHAPTER: ${chapterTitle} ---\n${chapterText.slice(0, 24000)}\n--- END CHAPTER ---`;
   try {
     if (body.type === 'mindmap') {
-      const { output } = await generateText({ model: worksheetModel, output: Output.object({ schema: MindMapSchema }), system: `${source}\nArtifact mode: MIND MAP. Create a clean, printable radial mind map. Keep every label very short so it fits without overlap: title ≤ 42 characters, each branch label ≤ 24 characters, and each child concept ≤ 36 characters. Use phrases, not sentences; no explanations, clauses, or punctuation-heavy text. Return 3–6 distinct branches with 1–4 children each. Never return notes, bullets-only notes, questions, answers or marks.`, prompt: mindMapPrompt(body.instruction, body.previous) });
+      const { text } = await generateText({ model: worksheetModel, system: `${source}\nArtifact mode: MIND MAP. Create a clean, printable radial mind map. Keep every label very short so it fits without overlap: title ≤ 42 characters, each branch label ≤ 24 characters, and each child concept ≤ 36 characters. Use phrases, not sentences; no explanations, clauses, or punctuation-heavy text. Return 3–6 distinct branches with 1–4 children each. Never return notes, bullets-only notes, questions, answers or marks.`, prompt: mindMapPrompt(body.instruction, body.previous) });
+      const output = normalizeMindMap(parseModelJson(text));
       console.info('[artifact] generated mindmap', { initial: !body.previous, sourceMs: loadedSourceAt - startedAt, modelMs: Date.now() - loadedSourceAt, chars: chapterText.length });
       return Response.json({ artifact: output });
     }
     const style = body.style ?? 'study-sheet';
-    const { output } = await generateText({ model: worksheetModel, output: Output.object({ schema: NotesSchema }), system: `${source}\n${notesStyleInstruction[style]}\nNever return a worksheet, mind map, questions, answers or marks.`, prompt: notesPrompt(style, body.instruction, body.previous) });
+    const { text } = await generateText({ model: worksheetModel, system: `${source}\n${notesStyleInstruction[style]}\nNever return a worksheet, mind map, questions, answers or marks. Return only strict JSON with double-quoted keys and strings. Do not include a style key. Avoid quotation marks inside content strings; use parentheses or commas instead.`, prompt: notesPrompt(style, body.instruction, body.previous) });
+    const output = normalizeNotes(parseModelJson(text), style);
     console.info('[artifact] generated notes', { style, initial: !body.previous, sourceMs: loadedSourceAt - startedAt, modelMs: Date.now() - loadedSourceAt, chars: chapterText.length });
-    return Response.json({ artifact: { ...output, style } });
+    return Response.json({ artifact: output });
   } catch (error) {
     console.error('[artifact] generation failed:', error);
     const message = error instanceof Error ? error.message : 'The model returned an unknown error.';

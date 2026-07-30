@@ -160,7 +160,7 @@ export function ChatWorkspace({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function reviseQuestion(question: Question, questionIndex: number, instruction: string) {
+  async function reviseQuestion(question: Question, questionIndex: number, instruction: string, targetType?: Question['type']) {
     if (!worksheet || !instruction.trim()) return;
     setBusyQuestions((current) => [...current, question]);
     setNotice(null);
@@ -173,6 +173,7 @@ export function ChatWorkspace({
           chapterId: chat.chapterId,
           question,
           instruction,
+          targetType,
         }),
       });
       const data = await res.json();
@@ -194,7 +195,7 @@ export function ChatWorkspace({
         };
       }));
       setSelectedQuestions((current) => current.filter((item) => item !== question));
-      showToast('Question updated.');
+      showToast(targetType ? `Question changed to ${targetType.replace(/_/g, ' ')}.` : 'Question updated.');
     } catch {
       setNotice('Could not reach the model.');
     } finally {

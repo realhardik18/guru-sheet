@@ -118,6 +118,7 @@ ${opts.chapterText}
 export function questionRevisionUserPrompt(opts: {
   question: Question;
   instruction: string;
+  targetType?: Question['type'];
 }): string {
   return `Here is the question as it currently stands:
 
@@ -126,7 +127,7 @@ ${JSON.stringify(opts.question, null, 2)}
 Apply this change: ${opts.instruction}
 
 Return the COMPLETE updated question, matching the same schema. Keep its tier
-and type the same unless the instruction explicitly asks you to change them.
+the same. ${opts.targetType ? `You MUST set its type to "${opts.targetType}". This is a required conversion: do not return the original type. Provide the fields required by that new type and remove fields that do not apply.` : 'Keep its type the same unless the instruction explicitly asks you to change it.'}
 Adjust marks if the difficulty changes meaningfully. Leave everything else
 about the question exactly as it is.`;
 }

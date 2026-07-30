@@ -38,15 +38,15 @@ generate a worksheet.
 ## Prerequisites
 
 - **Node.js 18.18+** (LTS recommended)
-- An **OpenRouter** API key — free tier works. Get one at
-  [openrouter.ai/keys](https://openrouter.ai/keys).
+- An API provider: OpenRouter, Gemini, or a local Ollama server.
 
 ## Quick start
 
 ```bash
 cd client
 npm install
-echo "OPENROUTER_API_KEY=sk-or-v1-..." > .env.local
+cp .env.example .env.local
+# Edit .env.local: choose AI_PROVIDER and add that provider's key.
 npm run smoke   # verifies the model responds AND returns schema-valid objects
 npm run dev
 ```
@@ -102,7 +102,7 @@ included, ready to photocopy.
 
 | Location | Purpose |
 |---|---|
-| `client/.env.local` | `OPENROUTER_API_KEY` — never committed |
+| `client/.env.local` | `AI_PROVIDER` plus `OPENROUTER_API_KEY`, `GEMINI_API_KEY`, or local Ollama settings — never committed |
 | `client/guru-sheet.config.json` | Machine-local: teacher name + chosen data folder path. Gitignored. |
 | `<your folder>/Guru Sheet/books/` | Uploaded/imported PDFs + extracted chapter text |
 | `<your folder>/Guru Sheet/chats/` | Chat history and saved worksheets, one JSON file per chat |

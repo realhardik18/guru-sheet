@@ -17,12 +17,16 @@ export async function POST(req: Request) {
     chapterId,
     question,
     instruction,
+    targetType: requestedType,
   }: {
     bookId?: string;
     chapterId?: string;
     question: Question;
     instruction: string;
+    targetType?: unknown;
   } = await req.json();
+  const targetTypeResult = QuestionSchema.shape.type.safeParse(requestedType);
+  const targetType = targetTypeResult.success ? targetTypeResult.data : undefined;
 
   const [book, chapterText] = await Promise.all([
     bookId ? getBook(bookId) : null,
@@ -48,11 +52,14 @@ export async function POST(req: Request) {
           chapterTitle: book?.chapters.find((c) => c.id === chapterId)?.title,
           chapterText,
         }),
-        prompt: questionRevisionUserPrompt({ question, instruction }),
+        prompt: questionRevisionUserPrompt({ question, instruction, targetType }),
       });
 
       const parsed = QuestionSchema.safeParse(output);
       if (!parsed.success) throw new Error('schema validation failed');
+      if (targetType && parsed.data.type !== targetType) {
+        throw new Error(`model returned ${parsed.data.type} instead of ${targetType}`);
+      }
 
       return Response.json({ question: parsed.data });
     } catch (err) {

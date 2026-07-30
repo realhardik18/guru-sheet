@@ -10,6 +10,10 @@ function newId() {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
+function defaultChatTitle(chapterTitle?: string) {
+  return (chapterTitle ?? 'New worksheet').replace(/\s+/g, ' ').trim().toLowerCase();
+}
+
 /** Creates a chat pinned to a chapter, then opens it. */
 export async function startChat(formData: FormData) {
   await requireConfiguredPage();
@@ -40,7 +44,7 @@ export async function startChat(formData: FormData) {
 
   const chat: Chat = {
     id: newId(),
-    title: chapter?.title ?? 'New worksheet',
+    title: defaultChatTitle(chapter?.title),
     bookId: bookId || undefined,
     chapterId: chapterId || undefined,
     createdAt: new Date().toISOString(),

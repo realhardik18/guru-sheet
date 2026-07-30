@@ -16,21 +16,35 @@ const navItems = [
 
 export function SidebarContent({ chats, teacherName, dataDir }: SidebarContentProps) {
   const [collapsed, setCollapsed] = useState(false);
+  const [closing, setClosing] = useState(false);
   const [hovering, setHovering] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const pathname = usePathname();
-  const compact = collapsed;
+  const compact = collapsed && !closing;
+
+  function toggleSidebar() {
+    if (collapsed) {
+      setClosing(false);
+      setCollapsed(false);
+    } else {
+      setClosing(true);
+      setCollapsed(true);
+      window.setTimeout(() => setClosing(false), 180);
+    }
+    setHovering(false);
+  }
 
   return (
-    <aside className={`no-print flex h-full shrink-0 flex-col overflow-hidden border-r border-line bg-surface font-[family-name:var(--font-inter)] transition-[width] duration-200 ease-out ${compact ? 'w-16' : 'w-72'}`}>
-      <div onMouseEnter={() => compact && setHovering(true)} onMouseLeave={() => setHovering(false)} className={`flex h-16 shrink-0 border-b border-line ${compact ? 'items-center justify-center px-2' : 'items-center justify-between px-4'}`}>
+    <aside className={`no-print flex h-full shrink-0 flex-col overflow-hidden border-r border-line bg-surface font-[family-name:var(--font-inter)] transition-[width] duration-200 ease-out ${collapsed ? 'w-16' : 'w-72'}`}>
+      <div onMouseEnter={() => compact && setHovering(true)} onMouseLeave={() => setHovering(false)} className={`flex h-16 shrink-0 border-b border-line transition-opacity duration-150 ${closing ? 'pointer-events-none opacity-0' : ''} ${compact ? 'items-center justify-center px-2' : 'items-center justify-between px-4'}`}>
         <Link href="/" title="GuruSheet" className={`flex min-w-0 items-center gap-2.5 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-accent ${compact && hovering ? 'hidden' : ''}`}>
-          <Image src="/guru-sheet-icon.png" alt="" width={compact ? 34 : 32} height={compact ? 34 : 32} className="shrink-0 rounded-lg shadow-sm" priority />
+          <Image src="/guru-sheet-icon.png" alt="" width={compact ? 34 : 32} height={compact ? 34 : 32} className="shrink-0" priority />
           {!compact && <span className="truncate text-[17px] font-semibold tracking-[-0.03em]">Guru<span className="text-accent">Sheet</span></span>}
         </Link>
-        {(!compact || hovering) && <CollapseButton collapsed={collapsed} onClick={() => { setCollapsed((value) => !value); setHovering(false); }} />}
+        {(!compact || hovering) && <CollapseButton collapsed={collapsed} onClick={toggleSidebar} />}
       </div>
 
+      <div className={`flex min-h-0 flex-1 flex-col transition-[opacity,transform] duration-150 ${closing ? 'pointer-events-none translate-x-2 opacity-0' : ''}`}>
       <nav className={`space-y-1 py-4 ${compact ? 'px-2' : 'px-3'}`} aria-label="Main navigation">
         {navItems.map(({ href, label, Icon }) => {
           const active = href === '/' ? pathname === '/' : pathname.startsWith(href);
@@ -72,6 +86,7 @@ export function SidebarContent({ chats, teacherName, dataDir }: SidebarContentPr
         onOpen={() => setProfileOpen(true)}
         onClose={() => setProfileOpen(false)}
       />
+      </div>
 
     </aside>
   );

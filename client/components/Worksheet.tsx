@@ -33,13 +33,13 @@ const HARDER_INSTRUCTION =
   'Make this question harder — increase the difficulty within the same tier.';
 
 const QUESTION_TYPE_ACTIONS = [
-  { type: 'mcq', label: 'Multiple choice', Icon: ListBullets },
-  { type: 'fill_blank', label: 'Fill in the blank', Icon: TextT },
-  { type: 'true_false', label: 'True or false with correction', Icon: CheckSquare },
-  { type: 'one_line', label: 'One-word or one-line answer', Icon: TextAa },
-  { type: 'short_answer', label: 'Short answer', Icon: PencilSimple },
-  { type: 'match', label: 'Match the following', Icon: ArrowsLeftRight },
-  { type: 'define_list_state', label: 'Define, list, or state', Icon: ListChecks },
+  { type: 'mcq', label: 'Multiple choice', badge: 'Multiple choice', Icon: ListBullets },
+  { type: 'fill_blank', label: 'Fill in the blank', badge: 'Fill the blank', Icon: TextT },
+  { type: 'true_false', label: 'True or false with correction', badge: 'True or false', Icon: CheckSquare },
+  { type: 'one_line', label: 'One-word or one-line answer', badge: 'One line answer', Icon: TextAa },
+  { type: 'short_answer', label: 'Short answer', badge: 'Short written answer', Icon: PencilSimple },
+  { type: 'match', label: 'Match the following', badge: 'Match the pairs', Icon: ArrowsLeftRight },
+  { type: 'define_list_state', label: 'Define, list, or state', badge: 'Define or list', Icon: ListChecks },
 ] as const;
 
 function changeTypeInstruction(type: (typeof QUESTION_TYPE_ACTIONS)[number]['type']) {
@@ -64,7 +64,7 @@ function QuestionEditor({
 }: {
   busy: boolean;
   questionType: Question['type'];
-  onRevise: (instruction: string) => void;
+  onRevise: (instruction: string, targetType?: Question['type']) => void;
   onClose: () => void;
 }) {
   const [customText, setCustomText] = useState('');
@@ -75,18 +75,19 @@ function QuestionEditor({
       onClick={(e) => e.stopPropagation()}
     >
       <div className="flex w-full flex-wrap items-center gap-1.5 border-b border-accent/20 pb-2">
-        <span className="mr-1 text-xs font-medium text-muted">Change type</span>
-        {QUESTION_TYPE_ACTIONS.map(({ type, label, Icon }) => (
+        <span className="mr-1 text-xs font-medium text-muted">Type</span>
+        {QUESTION_TYPE_ACTIONS.map(({ type, label, badge, Icon }) => (
           <button
             key={type}
             type="button"
             disabled={busy || questionType === type}
-            onClick={() => onRevise(changeTypeInstruction(type))}
+            onClick={() => onRevise(changeTypeInstruction(type), type)}
             aria-label={`Change to ${label}`}
             title={`Change to ${label}`}
-            className={`flex h-7 w-7 items-center justify-center rounded-md border transition-colors disabled:cursor-default disabled:opacity-45 ${questionType === type ? 'border-accent bg-accent text-white' : 'border-line bg-surface text-muted hover:border-accent hover:text-accent'}`}
+            className={`inline-flex h-7 items-center gap-1 rounded-full border px-2 text-[11px] font-semibold transition-colors disabled:cursor-default disabled:opacity-45 ${questionType === type ? 'border-accent bg-accent text-white' : 'border-line bg-surface text-muted hover:border-accent hover:text-accent'}`}
           >
             <Icon size={14} weight={questionType === type ? 'fill' : 'regular'} aria-hidden="true" />
+            {badge}
           </button>
         ))}
       </div>
@@ -163,7 +164,7 @@ function QuestionBlock({
   busy: boolean;
   onSelect: () => void;
   onClose: () => void;
-  onRevise: (instruction: string) => void;
+  onRevise: (instruction: string, targetType?: Question['type']) => void;
 }) {
   return (
     <li
@@ -248,7 +249,7 @@ export function WorksheetSheet({
   onSelectQuestion?: (question: Question) => void;
   onCloseQuestion?: (question: Question) => void;
   busyQuestions?: Question[];
-  onReviseQuestion?: (question: Question, questionIndex: number, instruction: string) => void;
+  onReviseQuestion?: (question: Question, questionIndex: number, instruction: string, targetType?: Question['type']) => void;
 }) {
   // Preserve the model's ordering within a tier, but always print the tiers in
   // difficulty order so a struggling child starts on something they can do.
@@ -328,7 +329,7 @@ export function WorksheetSheet({
                   busy={busyQuestions.includes(q)}
                   onSelect={() => onSelectQuestion?.(q)}
                   onClose={() => onCloseQuestion?.(q)}
-                  onRevise={(instruction) => onReviseQuestion?.(q, worksheet.questions.indexOf(q), instruction)}
+                  onRevise={(instruction, targetType) => onReviseQuestion?.(q, worksheet.questions.indexOf(q), instruction, targetType)}
                 />
               ))}
             </ol>

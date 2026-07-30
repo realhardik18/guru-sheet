@@ -1,23 +1,39 @@
 import { createOpenAI } from '@ai-sdk/openai';
 
-/**
- * The ONLY place in this codebase that names an inference provider.
- *
- * Everything else imports `worksheetModel` from here. Moving inference on-device
- * is a one-line change to this file — nothing downstream knows or cares where
- * the tokens come from.
- */
+type AiProvider = 'openrouter' | 'gemini' | 'ollama';
+
+function configuredProvider(): AiProvider {
+  const value = (process.env.AI_PROVIDER ?? 'openrouter').toLowerCase();
+  if (value === 'openrouter' || value === 'gemini' || value === 'ollama') return value;
+  throw new Error('AI_PROVIDER must be one of: openrouter, gemini, ollama.');
+}
+
+export const aiProvider = configuredProvider();
+
 const openrouter = createOpenAI({
   baseURL: 'https://openrouter.ai/api/v1',
   apiKey: process.env.OPENROUTER_API_KEY,
 });
 
-// `.chat()` on purpose: a bare openrouter(id) call resolves to OpenAI's
-// Responses API, which OpenRouter does not implement.
-export const worksheetModel = openrouter.chat('google/gemma-4-26b-a4b-it:free');
+// Google's OpenAI-compatible endpoint is backed by the Gemini Generative
+// Language API (`models/{model}:generateContent`), so it keeps the app's
+// existing AI SDK streaming and structured-output workflow intact.
+const gemini = createOpenAI({
+  baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai',
+  apiKey: process.env.GEMINI_API_KEY,
+});
 
-// LATER (local):
-// import { createOllama } from 'ollama-ai-provider';
-// export const worksheetModel = createOllama()('gemma3:4b');
+const ollama = createOpenAI({
+  baseURL: `${(process.env.OLLAMA_BASE_URL ?? 'http://127.0.0.1:11434').replace(/\/$/, '')}/v1`,
+  apiKey: process.env.OLLAMA_API_KEY ?? 'ollama',
+});
 
-export const hasApiKey = () => Boolean(process.env.OPENROUTER_API_KEY);
+export const worksheetModel =
+  aiProvider === 'gemini'
+    ? gemini.chat(process.env.GEMINI_MODEL ?? 'gemma-4-26b-a4b-it')
+    : aiProvider === 'ollama'
+      ? ollama.chat(process.env.OLLAMA_MODEL ?? 'gemma3:4b')
+      : openrouter.chat(process.env.OPENROUTER_MODEL ?? 'google/gemma-4-26b-a4b-it:free');
+
+export const hasApiKey = () =>
+  aiProvider === 'ollama' || Boolean(aiProvider === 'gemini' ? process.env.GEMINI_API_KEY : process.env.OPENROUTER_API_KEY);

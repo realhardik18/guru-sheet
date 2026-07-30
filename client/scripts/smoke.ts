@@ -9,16 +9,18 @@
  * for, and the one most likely to fail. Do not start UI work until it passes.
  */
 import { generateText, Output } from 'ai';
-import { worksheetModel } from '../lib/ai/model.ts';
+import { aiProvider, hasApiKey, worksheetModel } from '../lib/ai/model.ts';
 import { WorksheetSchema } from '../lib/ai/schema.ts';
 
 const ok = (s: string) => console.log(`\x1b[32m✓\x1b[0m ${s}`);
 const bad = (s: string) => console.log(`\x1b[31m✗\x1b[0m ${s}`);
 
-if (!process.env.OPENROUTER_API_KEY) {
-  bad('OPENROUTER_API_KEY is not set. Add it to client/.env.local');
+if (!hasApiKey()) {
+  bad(`${aiProvider === 'gemini' ? 'GEMINI_API_KEY' : 'OPENROUTER_API_KEY'} is not set. Add it to client/.env.local`);
   process.exit(1);
 }
+
+console.log(`Using ${aiProvider} provider.`);
 
 console.log('\n(a) plain text generation…');
 try {

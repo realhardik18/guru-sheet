@@ -1,5 +1,7 @@
 # GuruSheet
 
+![GuruSheet banner](banner.png)
+
 **Track:** Intelligence with Purpose  
 **Team:** GuruSheet
 
@@ -8,6 +10,8 @@
 ## Problem
 
 Teachers often need several classroom-ready versions of the same material, but making worksheets, revision notes, and mind maps by hand takes too long. This is especially difficult in mixed-ability classrooms, where every learner needs a different level of support. GuruSheet reduces that preparation burden while keeping the teacher in control of the source material and final output.
+
+![Problem statement](problems.png)
 
 ---
 

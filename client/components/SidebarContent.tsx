@@ -19,31 +19,31 @@ export function SidebarContent({ chats, teacherName, dataDir }: SidebarContentPr
   const [hovering, setHovering] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const pathname = usePathname();
-  const compact = collapsed && !hovering;
+  const compact = collapsed;
 
   return (
-    <aside onMouseEnter={() => setHovering(true)} onMouseLeave={() => setHovering(false)} className={`no-print flex h-full shrink-0 flex-col overflow-hidden border-r border-line bg-surface font-[family-name:var(--font-inter)] transition-[width] duration-200 ease-out ${compact ? 'w-16' : 'w-72'}`}>
-      <div className={`flex h-16 shrink-0 border-b border-line ${compact ? 'items-center justify-center px-2' : 'items-center justify-between px-4'}`}>
-        <Link href="/" title="GuruSheet" className="flex min-w-0 items-center gap-2.5 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-accent">
+    <aside className={`no-print flex h-full shrink-0 flex-col overflow-hidden border-r border-line bg-surface font-[family-name:var(--font-inter)] transition-[width] duration-200 ease-out ${compact ? 'w-16' : 'w-72'}`}>
+      <div onMouseEnter={() => compact && setHovering(true)} onMouseLeave={() => setHovering(false)} className={`flex h-16 shrink-0 border-b border-line ${compact ? 'items-center justify-center px-2' : 'items-center justify-between px-4'}`}>
+        <Link href="/" title="GuruSheet" className={`flex min-w-0 items-center gap-2.5 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-accent ${compact && hovering ? 'hidden' : ''}`}>
           <Image src="/guru-sheet-icon.png" alt="" width={compact ? 34 : 32} height={compact ? 34 : 32} className="shrink-0 rounded-lg shadow-sm" priority />
           {!compact && <span className="truncate text-[17px] font-semibold tracking-[-0.03em]">Guru<span className="text-accent">Sheet</span></span>}
         </Link>
-        {!compact && <CollapseButton collapsed={collapsed} onClick={() => setCollapsed((value) => !value)} />}
+        {(!compact || hovering) && <CollapseButton collapsed={collapsed} onClick={() => { setCollapsed((value) => !value); setHovering(false); }} />}
       </div>
 
-      {!compact && <>
-      <nav className="space-y-1 px-3 py-4" aria-label="Main navigation">
+      <nav className={`space-y-1 py-4 ${compact ? 'px-2' : 'px-3'}`} aria-label="Main navigation">
         {navItems.map(({ href, label, Icon }) => {
           const active = href === '/' ? pathname === '/' : pathname.startsWith(href);
           return (
-          <Link key={href} href={href} title={label} aria-current={active ? 'page' : undefined} className={`flex h-10 items-center gap-2.5 rounded-lg px-3 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-accent ${active ? 'bg-accent-soft text-accent' : 'text-muted hover:bg-accent-soft hover:text-accent'}`}>
+          <Link key={href} href={href} title={label} aria-current={active ? 'page' : undefined} className={`flex h-10 items-center rounded-lg text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-accent ${compact ? 'justify-center' : 'gap-2.5 px-3'} ${active ? 'bg-accent-soft text-accent' : 'text-muted hover:bg-accent-soft hover:text-accent'}`}>
             <Icon size={19} weight={active ? 'fill' : 'regular'} aria-hidden="true" className="shrink-0" />
-            <span>{label}</span>
+            {!compact && <span>{label}</span>}
           </Link>
           );
         })}
       </nav>
 
+      {!compact ? (
         <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-4">
           <div className="mb-2 flex items-center gap-2 px-2 pt-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
             <ClockCounterClockwise size={16} weight="bold" aria-hidden="true" /> Recent
@@ -63,16 +63,15 @@ export function SidebarContent({ chats, teacherName, dataDir }: SidebarContentPr
             </ul>
           )}
         </div>
+      ) : <div className="flex-1" />}
       <ProfileSection
-        collapsed={false}
+        collapsed={compact}
         teacherName={teacherName}
         dataDir={dataDir}
         open={profileOpen}
         onOpen={() => setProfileOpen(true)}
         onClose={() => setProfileOpen(false)}
       />
-      </>}
-      {compact && <div className="flex-1" />}
 
     </aside>
   );

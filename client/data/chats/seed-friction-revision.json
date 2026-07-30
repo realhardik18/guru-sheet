@@ -1,0 +1,17 @@
+{
+  "id": "seed-friction-revision",
+  "title": "Friction — quick revision sheet",
+  "bookId": "demo-science-8",
+  "chapterId": "ch02",
+  "createdAt": "2026-07-30T10:40:00.000Z",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Make a 15-minute revision worksheet on friction for Class 8. Three levels."
+    },
+    {
+      "role": "assistant",
+      "content": "Done — 15 marks across three tiers. The 'below' section stays on recognising friction as an opposing force, the 'at' section covers static/sliding/rolling, and the stretch question asks them to justify why ball bearings work."
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+Chapter 3: Sound
+
+3.1 Sound is Produced by Vibration
+
+Strike a tuning fork and touch it gently to the surface of water: the water splashes. Pluck the string of a guitar and watch it blur back and forth. Place your fingers on your throat and speak: you feel a trembling.
+
+In every case, the object producing sound is moving rapidly to and fro about its rest position. Such a to-and-fro motion is called vibration, and sound is produced by vibrating objects. When the vibration stops, the sound stops.
+
+In humans, sound is produced by the voice box, or larynx, at the upper end of the windpipe. Two vocal cords are stretched across it, leaving a narrow slit between them for air. When the lungs force air through this slit, the vocal cords vibrate and produce sound. Muscles attached to the cords change their tightness and thus the sound produced.
+
+3.2 Sound Needs a Medium
+
+Sound cannot travel through empty space. It requires a material medium — a solid, a liquid or a gas — to carry it.
+
+If an electric bell is suspended inside a sealed glass jar and the air is slowly pumped out, the sound grows fainter and fainter, until almost nothing can be heard even though the hammer is still visibly striking. Air was carrying the sound; with the air removed, the sound cannot reach us. This is why there is complete silence on the Moon, which has no atmosphere.
+
+Sound travels through liquids and solids too, and in fact travels faster through them than through air. Whales and dolphins communicate over great distances underwater. If you press your ear to a long metal railing while someone taps the far end, you hear the tap clearly.
+
+3.3 How We Hear
+
+The shape of the outer ear collects sound and directs it down the ear canal to a thin, tightly stretched membrane called the eardrum.
+
+The eardrum is like the stretched skin of a drum. Sound arriving at it makes it vibrate. These vibrations are passed to three tiny bones in the middle ear, which amplify them and pass them to the inner ear. There the vibrations are converted into electrical signals, which travel along the auditory nerve to the brain, where they are interpreted as sound.
+
+The eardrum is extremely delicate and can be damaged permanently by very loud sounds. Nothing should ever be inserted into the ear canal.
+
+3.4 Amplitude, Frequency and Time Period
+
+A vibrating object moves back and forth about its central rest position. One complete back-and-forth movement is called one oscillation.
+
+The maximum distance the object moves from its rest position is called the amplitude of the vibration. The number of oscillations completed in one second is called the frequency, measured in hertz (Hz). One hertz is one oscillation per second. The time taken to complete one oscillation is called the time period.
+
+These quantities determine what a sound is like to listen to.
+
+The loudness of a sound depends on its amplitude. A gently struck drum vibrates with small amplitude and gives a soft sound; struck hard, it vibrates with large amplitude and gives a loud sound. Loudness is measured in decibels (dB).
+
+The pitch, or shrillness, of a sound depends on its frequency. A high-frequency vibration produces a shrill, high-pitched sound, such as that of a whistle or a bird call. A low-frequency vibration produces a deep, low-pitched sound, such as that of a drum or a lion's roar.
+
+3.5 Audible and Inaudible Sounds
+
+The human ear can hear sounds only within a limited range of frequency, roughly from 20 Hz to 20,000 Hz. This is called the audible range.
+
+Sounds of frequency below 20 Hz are called infrasonic. Sounds above 20,000 Hz are called ultrasonic. Neither can be heard by humans, though many animals can hear them. Dogs hear frequencies well above our upper limit, which is why a dog whistle silent to us is clear to a dog. Bats and dolphins produce and detect ultrasonic sound to navigate and to locate food.
+
+3.6 Noise Pollution
+
+Sounds that are pleasant to hear are called music. Sounds that are unpleasant, irregular and disturbing are called noise.
+
+The presence of excessive or unwanted sound in the environment is called noise pollution. Major sources include vehicle horns, loudspeakers, construction machinery, aircraft, and household appliances such as mixers and air conditioners.
+
+Noise pollution causes lack of sleep, anxiety, headaches, high blood pressure and, on prolonged exposure to very loud sound, permanent loss of hearing.
+
+It can be reduced in several ways: by controlling noise at its source through silencers on vehicles and machinery, by restricting the use of horns and loudspeakers in residential and hospital zones, by placing noisy industries away from housing, and by planting trees along roads and around buildings, since trees absorb sound effectively.

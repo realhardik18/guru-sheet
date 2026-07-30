@@ -1,0 +1,128 @@
+{
+  "id": "ms76t592-o23mo",
+  "title": "Force and Pressure",
+  "bookId": "demo-science-8",
+  "chapterId": "ch01",
+  "createdAt": "2026-07-30T07:23:36.278Z",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Homework sheet — nothing that needs equipment at home."
+    },
+    {
+      "role": "assistant",
+      "content": "Two tiers, fifteen marks. The higher tier requires students to explain the relationship between depth and liquid pressure using the dam example."
+    }
+  ],
+  "worksheet": {
+    "topic": "Force and Pressure",
+    "classLevel": "General",
+    "totalMarks": 21,
+    "questions": [
+      {
+        "q": "A force is a ______ or a ______.",
+        "type": "short",
+        "answer": "push, pull",
+        "tier": "below",
+        "marks": 2,
+        "commonWrongAnswer": "kick, throw"
+      },
+      {
+        "q": "Which of these is a contact force?",
+        "type": "mcq",
+        "options": [
+          "Magnetic force",
+          "Gravitational force",
+          "Muscular force",
+          "Electrostatic force"
+        ],
+        "answer": "Muscular force",
+        "tier": "below",
+        "marks": 2,
+        "commonWrongAnswer": "Magnetic force"
+      },
+      {
+        "q": "Which force is exerted by the Earth on all objects?",
+        "type": "mcq",
+        "options": [
+          "Magnetic force",
+          "Friction",
+          "Electrostatic force",
+          "Gravitational force"
+        ],
+        "answer": "Gravitational force",
+        "tier": "below",
+        "marks": 2,
+        "commonWrongAnswer": "Friction"
+      },
+      {
+        "q": "True or False: A force can be seen directly.",
+        "type": "short",
+        "answer": "False",
+        "tier": "below",
+        "marks": 2,
+        "commonWrongAnswer": "True"
+      },
+      {
+        "q": "The force acting on a unit area of a surface is called:",
+        "type": "mcq",
+        "options": [
+          "Weight",
+          "Pressure",
+          "Friction",
+          "Gravity"
+        ],
+        "answer": "Pressure",
+        "tier": "at",
+        "marks": 2,
+        "commonWrongAnswer": "Weight"
+      },
+      {
+        "q": "When two students push a box from opposite sides with equal force, the net force is ____.",
+        "type": "short",
+        "answer": "zero",
+        "tier": "at",
+        "marks": 2,
+        "commonWrongAnswer": "equal"
+      },
+      {
+        "q": "As depth increases in a liquid, the pressure exerted by the liquid ____.",
+        "type": "mcq",
+        "options": [
+          "decreases",
+          "stays the same",
+          "increases",
+          "becomes zero"
+        ],
+        "answer": "increases",
+        "tier": "at",
+        "marks": 2,
+        "commonWrongAnswer": "decreases"
+      },
+      {
+        "q": "What is the SI unit of pressure?",
+        "type": "short",
+        "answer": "pascal (or Pa)",
+        "tier": "at",
+        "marks": 2,
+        "commonWrongAnswer": "newton"
+      },
+      {
+        "q": "Explain why camels have broad feet instead of narrow ones.",
+        "type": "long",
+        "answer": "Camels have broad feet to spread their weight over a larger area of sand so they do not sink.",
+        "tier": "stretch",
+        "marks": 3,
+        "commonWrongAnswer": "To help them walk faster."
+      },
+      {
+        "q": "Explain how the direction of a force is important when describing it.",
+        "type": "long",
+        "answer": "A force is described completely only when we state both how strong it is and which way it acts.",
+        "tier": "stretch",
+        "marks": 2,
+        "commonWrongAnswer": "Direction does not matter, only strength."
+      }
+    ]
+  }
+}

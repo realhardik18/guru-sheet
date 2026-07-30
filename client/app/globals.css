@@ -1,26 +1,179 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
   --color-background: var(--background);
+  --color-surface: var(--surface);
   --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Light theme only, deliberately — this app runs on the teacher's own
+   machine and is read in a classroom, not a dark room. No dark-mode variant. */
+:root {
+  color-scheme: light;
+  --background: #faf9f6;
+  --surface: #ffffff;
+  --foreground: #1c1b19;
+  --muted: #6b6862;
+  --line: #e3e0d8;
+  --accent: #1a5c4a;
+  --accent-soft: #e7f0ec;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+/* Tier accents — screen only; print gets its own treatment below. */
+.tier-below { --tier: #b06f1a; }
+.tier-at { --tier: #1a5c4a; }
+.tier-stretch { --tier: #6b3fa0; }
+
+/* The worksheet reads the same on screen and on paper. */
+.worksheet {
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Running footer only exists for the printed page — see @media print below. */
+.print-footer { display: none; }
+
+/* A gentle left-to-right shimmer for "working" copy, e.g. while the model drafts a sheet. */
+@keyframes shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+.shimmer-text {
+  background: linear-gradient(90deg, var(--muted) 40%, var(--accent) 50%, var(--muted) 60%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer 2s linear infinite;
+}
+
+/* ------------------------------------------------------------------ */
+/* PRINT — the actual deliverable. One worksheet, one clean A4 page.   */
+/* ------------------------------------------------------------------ */
+@page {
+  size: A4;
+  margin: 15mm 15mm 20mm 15mm;
+}
+
+@media print {
+  /* Everything that is not the worksheet disappears — including the sidebar. */
+  .no-print,
+  aside,
+  button {
+    display: none !important;
+  }
+
+  /* The app shell is a fixed-height, non-scrolling flex row on screen.
+     Printing needs the exact opposite: let the content run as long as it likes. */
+  html,
+  body,
+  body.app-shell {
+    background: #fff !important;
+    color: #000 !important;
+    font-size: 11pt;
+    display: block !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  main,
+  .app-main {
+    overflow: visible !important;
+    height: auto !important;
+  }
+
+  /* Undo the split-screen: the sheet takes the whole page. */
+  .print-root {
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    height: auto !important;
+    overflow: visible !important;
+    border: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #fff !important;
+  }
+
+  .worksheet {
+    box-shadow: none !important;
+    border: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: none !important;
+  }
+
+  /* Fixed elements repeat on every printed page in Chromium — used here for
+     a running footer, since true CSS Paged Media page-counters aren't
+     reliably supported yet. */
+  .print-footer {
+    display: flex !important;
+    position: fixed;
+    bottom: 6mm;
+    left: 15mm;
+    right: 15mm;
+    justify-content: space-between;
+    border-top: 1px solid #ccc;
+    padding-top: 3pt;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 8pt;
+    font-style: italic;
+    color: #888 !important;
+  }
+
+  .worksheet .score-box,
+  .worksheet .mcq-option,
+  .worksheet .option-letter {
+    border-color: #000 !important;
+  }
+
+  /* Never split a question across two pages — the child loses the thread. */
+  .question {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Paper is the scarce resource. Tighten the writing space so a normal
+     worksheet lands on one sheet instead of spilling one question onto a second. */
+  .worksheet .answer-lines > * + * {
+    margin-top: 0.6rem;
+  }
+
+  .worksheet .question {
+    padding-top: 0.15rem;
+    padding-bottom: 0.15rem;
+    /* Any on-screen selection state (for the question editor) never prints. */
+    background: none !important;
+    box-shadow: none !important;
+  }
+
+  .tier-heading {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  /* Colour is unreliable on a school printer. Print structure, not hue. */
+  .worksheet .tier-heading,
+  .worksheet .tier-heading * {
+    color: #000 !important;
+    border-color: #000 !important;
+  }
+
+  a[href]::after {
+    content: "";
+  }
 }

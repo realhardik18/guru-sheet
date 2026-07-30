@@ -1,0 +1,17 @@
+{
+  "id": "seed-sound-homework",
+  "title": "Sound — homework, no calculator",
+  "bookId": "demo-science-8",
+  "chapterId": "ch03",
+  "createdAt": "2026-07-29T15:05:00.000Z",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Homework sheet on sound. No numerical calculations, they don't have calculators at home."
+    },
+    {
+      "role": "assistant",
+      "content": "Kept it entirely qualitative — amplitude vs loudness, frequency vs pitch, and one long answer on noise pollution. No arithmetic anywhere."
+    }
+  ]
+}

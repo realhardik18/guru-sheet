@@ -1,0 +1,47 @@
+Chapter 2: Friction
+
+2.1 Friction — A Force That Opposes Motion
+
+Roll a ball on the ground and it gradually slows down and stops. Nobody touches it, yet something brings it to rest. That something is friction — a force that opposes the relative motion between two surfaces in contact.
+
+Friction always acts in the direction opposite to the motion. If a box slides to the right, friction on the box acts to the left. Friction can never, by itself, set a stationary object into motion; it can only resist motion that is happening or about to happen.
+
+2.2 What Causes Friction
+
+No surface is perfectly smooth. Even a polished sheet of glass, viewed under a microscope, is covered in tiny bumps and hollows called irregularities. When two surfaces are placed together, the irregularities of one surface lock into the irregularities of the other. To slide one surface over the other, these interlocked points must be forced apart, and this resistance is what we experience as friction.
+
+It follows that the rougher the surfaces, the greater the interlocking, and the greater the friction. Sliding a book across a carpet is far harder than sliding it across a marble floor.
+
+Friction also depends on how hard the two surfaces are pressed together. A heavy box is harder to push than a light one made of the same material, because the greater weight presses the irregularities more firmly into each other.
+
+2.3 Static, Sliding and Rolling Friction
+
+When you begin to push a heavy almirah, it does not move at first. The friction acting during this stage, before motion begins, is called static friction. It increases as you push harder, up to a maximum value.
+
+Once the almirah starts sliding, you find it slightly easier to keep it moving than it was to start it. The friction now acting is called sliding friction, and it is smaller than the maximum static friction. This is because the surfaces get less time to settle and interlock properly while sliding.
+
+If the almirah is placed on rollers or wheels, moving it becomes far easier still. When one body rolls over the surface of another, the friction is called rolling friction, and it is much smaller than sliding friction. This is precisely why wheels were such a decisive invention, and why ball bearings are placed in machines, in ceiling fans and in bicycle hubs.
+
+So: rolling friction is less than sliding friction, which is less than static friction.
+
+2.4 Friction: Friend and Foe
+
+Friction is often useful, and life without it would be impossible.
+
+We can walk only because of friction between our shoes and the ground. On a wet, soapy floor, friction is greatly reduced and we slip. Vehicles can move and stop only because of friction between tyres and road; brakes work entirely by friction. We can hold a pencil, strike a match, tie a knot, or write on paper only because of friction.
+
+Yet friction is also wasteful. It wears out the soles of shoes, the steps of staircases and the moving parts of machinery. It generates heat — rub your palms together briskly and they warm up. In machines, this heat wastes energy and can damage parts.
+
+2.5 Increasing and Reducing Friction
+
+Sometimes we deliberately increase friction. The soles of shoes and the tyres of vehicles are grooved to grip better. Kabaddi players rub their hands with soil for a better grip. Gymnasts apply coarse powder to their palms.
+
+At other times we reduce friction. Lubricants such as oil and grease are applied between moving machine parts; they form a thin layer between the surfaces so that the irregularities no longer interlock directly. Powder is sprinkled on a carrom board for the same reason. In some machines, a layer of air is used to keep surfaces apart. Replacing sliding by rolling, using ball bearings, is one of the most effective ways of reducing friction.
+
+2.6 Fluid Friction
+
+Air and water are called fluids, because they flow. Fluids also exert a frictional force on objects moving through them, and this is called drag.
+
+The drag on an object depends on its speed, on its shape, and on the nature of the fluid. Because overcoming drag wastes energy, objects that must move quickly through a fluid are given a special shape that allows the fluid to flow past smoothly. This shape is called a streamlined shape.
+
+Birds and fish have streamlined bodies, shaped by evolution to reduce drag. Aeroplanes, cars, boats and high-speed trains are all designed with streamlined shapes for the same reason.

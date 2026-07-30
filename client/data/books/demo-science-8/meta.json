@@ -1,0 +1,40 @@
+{
+  "id": "demo-science-8",
+  "title": "Science — Class 8",
+  "uploadedAt": "2026-07-30T09:12:00.000Z",
+  "pageCount": 64,
+  "chapters": [
+    {
+      "id": "ch01",
+      "title": "Force and Pressure",
+      "startPage": 1,
+      "endPage": 18,
+      "charCount": 10920,
+      "textPath": "chapters/ch01.txt"
+    },
+    {
+      "id": "ch02",
+      "title": "Friction",
+      "startPage": 19,
+      "endPage": 32,
+      "charCount": 4452,
+      "textPath": "chapters/ch02.txt"
+    },
+    {
+      "id": "ch03",
+      "title": "Sound",
+      "startPage": 33,
+      "endPage": 50,
+      "charCount": 4765,
+      "textPath": "chapters/ch03.txt"
+    },
+    {
+      "id": "ch04",
+      "title": "Chemical Effects of Electric Current",
+      "startPage": 51,
+      "endPage": 64,
+      "charCount": 97,
+      "textPath": "chapters/ch04.txt"
+    }
+  ]
+}

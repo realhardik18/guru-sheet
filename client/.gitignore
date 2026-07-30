@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Machine-local GuruSheet setup
+guru-sheet.config.json
+
+# Machine-local GuruSheet setup
+guru-sheet.config.json

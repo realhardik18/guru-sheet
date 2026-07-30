@@ -23,9 +23,10 @@ export default async function CollectionPage({
   const books = loadedBooks.filter((book): book is NonNullable<typeof book> => book !== null);
 
   return (
-    <main className="mx-auto w-full max-w-4xl flex-1 overflow-y-auto px-5 py-10">
-      <Link href="/library" className="inline-flex items-center gap-1 text-sm text-muted hover:text-foreground">
-        <ArrowLeft size={14} aria-hidden="true" /> Library
+    <main className="w-full flex-1 overflow-y-auto">
+      <div className="mx-auto max-w-4xl px-5 py-10">
+      <Link href="/library" className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#124637] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2">
+        <ArrowLeft size={15} weight="bold" aria-hidden="true" /> Back to library
       </Link>
       <p className="mt-4 text-sm font-medium text-accent">Class {collection.classLevel} · {collection.subject}</p>
       <h1 className="mt-1 text-2xl font-bold tracking-tight">{collection.name}</h1>
@@ -42,7 +43,7 @@ export default async function CollectionPage({
               <li key={book.id} className="flex flex-wrap items-center gap-4 px-4 py-3.5">
                 <div className="min-w-0 flex-1">
                   <div className="font-medium">{chapter.title}</div>
-                  <div className="mt-0.5 text-sm text-muted">{book.pageCount} pages · {chapter.charCount.toLocaleString()} chars</div>
+                  <div className="mt-0.5 text-sm text-muted">{book.pageCount} pages</div>
                   {scanned && (
                     <p className="mt-1 flex items-center gap-1 text-xs text-[#b06f1a]">
                       <Warning size={12} weight="bold" aria-hidden="true" />
@@ -56,6 +57,7 @@ export default async function CollectionPage({
           })}
         </ul>
       )}
+      </div>
     </main>
   );
 }

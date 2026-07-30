@@ -128,6 +128,7 @@ export function NcertImport({ subjectSuggestions }: { subjectSuggestions: string
           </button>
         </div>
       </form>
+      {busy && <div role="status" aria-live="polite" className="mt-4 flex items-center gap-2 rounded-lg border border-accent/20 bg-accent-soft px-3 py-3 text-sm text-accent"><CircleNotch size={17} className="animate-spin" aria-hidden="true" /><span><strong>Indexing your collection…</strong> Reading each PDF, then naming all chapters together.</span></div>}
       {error && (
         <p className="mt-3 flex items-center gap-1.5 rounded bg-[#b06f1a]/10 px-3 py-2 text-sm text-[#b06f1a]">
           <WarningCircle size={15} weight="bold" className="shrink-0" aria-hidden="true" />

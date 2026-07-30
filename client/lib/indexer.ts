@@ -1,6 +1,18 @@
 import { extractText, getResolvedPDFJS } from 'unpdf';
 import type { Chapter } from './types';
 
+// PDF.js calls this newer JavaScript helper when it is available. Node versions
+// used by the local app do not always expose it yet, which otherwise produces a
+// warning for every imported page despite successful text extraction.
+const mathWithSumPrecise = Math as typeof Math & { sumPrecise?: (values: Iterable<number>) => number };
+if (!mathWithSumPrecise.sumPrecise) {
+  mathWithSumPrecise.sumPrecise = (values) => {
+    let sum = 0;
+    for (const value of values) sum += value;
+    return sum;
+  };
+}
+
 /**
  * Chapter boundaries are found structurally, never by asking the model.
  * A model split is slow and, worse, a wrong split stays invisible until the

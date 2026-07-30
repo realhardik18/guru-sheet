@@ -1,9 +1,12 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import * as yauzl from 'yauzl';
+import { generateText, Output } from 'ai';
+import { z } from 'zod';
 import { indexChapterPdf } from './indexer';
 import { saveCollection, saveCollectionArchive, saveIndexedBook } from './store';
 import type { Book, LibraryCollection } from './types';
+import { hasApiKey, worksheetModel } from './ai/model';
 
 const MAX_PDF_BYTES = 80 * 1024 * 1024;
 
@@ -35,6 +38,31 @@ function fallbackTitle(filename: string) {
     .replace(/[-_]+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+type PendingChapter = { id: string; pdf: Buffer; indexed: Awaited<ReturnType<typeof indexChapterPdf>> };
+
+function firstPageText(indexed: PendingChapter['indexed']) {
+  return (indexed.texts.ch01 ?? '').split(/\[\[page 2\]\]/)[0].replace(/\[\[page 1\]\]/, '').trim().slice(0, 1400);
+}
+
+async function nameChaptersInBatch(chapters: PendingChapter[]): Promise<Map<string, string>> {
+  const fallback = new Map(chapters.map((chapter) => [chapter.id, chapter.indexed.chapters[0].title]));
+  if (!hasApiKey() || chapters.length === 0) return fallback;
+  const schema = z.object({ titles: z.array(z.object({ id: z.string(), title: z.string().min(3).max(120) })) });
+  for (let offset = 0; offset < chapters.length; offset += 10) {
+    const batch = chapters.slice(offset, offset + 10);
+    const prompt = `Name these NCERT chapter PDFs from their first-page text. Return one concise, student-facing chapter title per ID. Remove page numbers, headers, publisher text, codes, and repeated running titles. Do not invent a topic; use the actual chapter heading.\n\n${batch.map((chapter) => `ID: ${chapter.id}\nFIRST PAGE:\n${firstPageText(chapter.indexed)}`).join('\n\n---\n\n')}`;
+    try {
+      const { output } = await generateText({ model: worksheetModel, output: Output.object({ schema }), prompt });
+      for (const item of output.titles) {
+        if (fallback.has(item.id) && item.title.trim()) fallback.set(item.id, item.title.replace(/[\u0000-\u001F\u007F]/g, ' ').replace(/\s+/g, ' ').trim());
+      }
+    } catch (error) {
+      console.warn('[ncert import] batch chapter naming unavailable; using extracted headings for this batch.', error);
+    }
+  }
+  return fallback;
 }
 
 function isSafePdfEntry(entryPath: string) {
@@ -83,6 +111,7 @@ export async function importNcertZip(input: {
   await saveCollection(collection);
 
   const failures: NcertImportResult['failures'] = [];
+  const pending: PendingChapter[] = [];
   for (const [archiveIndex, zipPath] of [sourceZip].entries()) {
     const archiveLabel = path.basename(zipPath);
     try {
@@ -111,16 +140,7 @@ export async function importNcertZip(input: {
             );
             const indexed = await indexChapterPdf(pdf, fallbackTitle(entry.fileName));
             const id = `${slugify(entry.fileName)}-${newId()}`;
-            const book: Book = {
-              id,
-              title: indexed.chapters[0].title,
-              uploadedAt: new Date().toISOString(),
-              pageCount: indexed.pageCount,
-              chapters: indexed.chapters,
-              collectionId: collection.id,
-            };
-            await saveIndexedBook(book, pdf, indexed.texts);
-            collection.bookIds.push(id);
+            pending.push({ id, pdf, indexed });
           } catch (error) {
             failures.push({
               file: entryLabel,
@@ -138,6 +158,15 @@ export async function importNcertZip(input: {
         error: error instanceof Error ? error.message : 'Could not read this ZIP.',
       });
     }
+  }
+
+  const titles = await nameChaptersInBatch(pending);
+  for (const item of pending) {
+    const title = titles.get(item.id) ?? item.indexed.chapters[0].title;
+    const chapters = item.indexed.chapters.map((chapter) => ({ ...chapter, title }));
+    const book: Book = { id: item.id, title, uploadedAt: new Date().toISOString(), pageCount: item.indexed.pageCount, chapters, collectionId: collection.id };
+    await saveIndexedBook(book, item.pdf, item.indexed.texts);
+    collection.bookIds.push(item.id);
   }
 
   await saveCollection(collection);
